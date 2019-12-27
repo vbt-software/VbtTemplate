@@ -126,7 +126,7 @@ namespace Core.Caching
             }
 
             if (isRefreshToken)
-                return $"{userId}-Mobile-RefreshToken";
+                return $"{userId}-RefreshToken";
 
             return isMobile ? $"{userId}-Mobile-Token" : $"{userId}-Token";
         }

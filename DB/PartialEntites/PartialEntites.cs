@@ -18,6 +18,7 @@ namespace DB.Entities
     public partial class Products : BaseEntity { }
     public partial class Orders : BaseEntity { }
     public partial class Products : BaseEntity { }
+    public partial class Users : BaseEntity, ISoftDeletable { }
 
     #region Views 
     [Table("Sales by Category")]

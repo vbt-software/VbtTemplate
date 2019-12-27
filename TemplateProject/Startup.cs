@@ -20,6 +20,10 @@ using Services.Customers;
 using Services.Employees;
 using Microsoft.OpenApi.Models;
 using TemplateProject.Infrastructure;
+using Core.CoreContext;
+using Services.SecurityService;
+using Services.Users;
+using Services.Login;
 
 namespace TemplateProject
 {
@@ -39,6 +43,11 @@ namespace TemplateProject
             services.AddScoped(typeof(IRepository<>), typeof(GeneralRepository<>));
             services.AddTransient<ICustomerService, CustomerService>();
             services.AddTransient<IEmployeesService, EmployeesService>();
+            services.AddTransient<IUserService, UserService>();
+            services.AddTransient<ILoginService, LoginService>();
+            services.AddSingleton<ICoreContext, CoreContext>();
+
+            services.AddScoped<LoginFilter>();
 
             var mappingConfig = new MapperConfiguration(mc =>
             {
@@ -50,6 +59,7 @@ namespace TemplateProject
             services.Configure<VbtConfig>(Configuration.GetSection("VbtConfig"));
 
             services.AddTransient<IRedisCacheService, RedisCacheService>();
+            services.AddTransient<IEncryptionService, EncryptionService>();
 
             services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
                .AllowAnyMethod()
@@ -59,6 +69,7 @@ namespace TemplateProject
 
             services.AddSwaggerGen(c =>
             {
+                c.EnableAnnotations(); //Amaç Swagger'da Açýklama Girmek
                 c.SwaggerDoc("CoreSwagger", new OpenApiInfo
                 {
                     Title = "Swagger on ASP.NET Core",
@@ -87,8 +98,28 @@ namespace TemplateProject
                 //});
 
                 //c.OperationFilter<AddRequiredHeaderParameter>();
+
+                c.AddSecurityDefinition("Bearer", //Name the security scheme
+                    new OpenApiSecurityScheme
+                    {
+                        Description = "Custom Authorization Token Header Using the Bearer scheme.",
+                        Type = SecuritySchemeType.Http, //We set the scheme type to http since we're using bearer authentication
+                        Scheme = "bearer" //The name of the HTTP Authorization scheme to be used in the Authorization header. In this case "bearer".
+                    });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement{
+                        {
+                               new OpenApiSecurityScheme{
+                                Reference = new OpenApiReference{
+                                    Id = "Bearer", //The name of the previously defined security scheme.
+                                    Type = ReferenceType.SecurityScheme
+                                }
+                            },new List<string>()
+                        }
+                });
             });
 
+            //3.1'de Destek Yok. services.AddSession();
             services.AddControllers();
         }
 
@@ -112,6 +143,9 @@ namespace TemplateProject
             });
 
             app.UseStaticFiles();
+
+            //3.1'de Destek Yok. app.UseSession();
+
             app.UseCors("AllowAll");
 
             app.UseSwagger()

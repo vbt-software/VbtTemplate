@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Core.Models;
+using Core.Models.Users;
 using DB.Entities;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,11 @@ namespace TemplateProject.Infrastructure
             #region Employees Mapper
             CreateMap<Employees, EmployeesModel>();
             CreateMap<EmployeesModel, Employees>();
+            #endregion
+
+            #region User Mapper
+            CreateMap<Users, UserModel>();
+            CreateMap<UserModel, Users>();
             #endregion
         }
     }

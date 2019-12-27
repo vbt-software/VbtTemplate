@@ -17,6 +17,9 @@ namespace Core.Configuration
         public string RedisEndPoint { get; set; }
         public int RedisPort { get; set; }
         public string MobileVersion { get; set; }
+        public string EnvironmentName { get; set; }
+        public int TokenExpireTime { get; set; }
+        public int RefreshTokenExpireTime { get; set; }
 
         #endregion
         public VbtConfig()
