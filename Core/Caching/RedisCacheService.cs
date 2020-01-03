@@ -112,23 +112,63 @@ namespace Core.Caching
             throw new NotImplementedException();
         }
 
+        //public string GetTokenKey(int userId, bool isMobile, bool isRefreshToken, string unqDeviceId)
+        //{
+        //    if (!string.IsNullOrEmpty(unqDeviceId))
+        //        unqDeviceId = unqDeviceId.ToUpper();
+
+        //    //Mobile Demek
+        //    if (!string.IsNullOrEmpty(unqDeviceId))
+        //    {
+        //        //Mobile RefreshToken
+        //        if (isRefreshToken)
+        //            return $"{userId}:{unqDeviceId}-Mobile-RefreshToken";
+
+        //        //Mobile Token. Kontrol amaçlı koyduk(Web Buraya düşmez. Çünkü unqDeviceId boş gelmez.)
+        //        return isMobile ? $"{userId}:{unqDeviceId}-Mobile-Token" : $"{userId}:Token";
+        //    }
+
+        //    //Web RefreshToken
+        //    if (isRefreshToken)
+        //        return $"{userId}:RefreshToken";
+
+        //    //Web Token. Kontrol amaçlı koyduk(Mobile buraya düşmez Çünkü unqDeviceId boş gelir.)
+        //    return isMobile ? $"{userId}:Mobile-Token" : $"{userId}:Token";
+        //}
         public string GetTokenKey(int userId, bool isMobile, bool isRefreshToken, string unqDeviceId)
         {
             if (!string.IsNullOrEmpty(unqDeviceId))
                 unqDeviceId = unqDeviceId.ToUpper();
 
-            if (!string.IsNullOrEmpty(unqDeviceId))
+            //Mobile Demek
+            if (isMobile)
             {
-                if (isRefreshToken)
-                    return $"{userId}:{unqDeviceId}-Mobile-RefreshToken";
+                if (!string.IsNullOrEmpty(unqDeviceId))
+                {
+                    //Mobile RefreshToken With unqDeviceId
+                    if (isRefreshToken)
+                        return $"{userId}:{unqDeviceId}-Mobile-RefreshToken";
 
-                return isMobile ? $"{userId}:{unqDeviceId}-Mobile-Token" : $"{userId}-Token";
+                    return $"{userId}:{unqDeviceId}-Mobile-Token";
+                }
+                else
+                {
+                    //Mobile RefreshToken Without unqDeviceId
+                    if (isRefreshToken)
+                        return $"{userId}:Mobile-RefreshToken";
+
+                    return $"{userId}:Mobile-Token";
+                }
             }
+            else //Web Demek
+            {
+                //Web RefreshToken
+                if (isRefreshToken)
+                    return $"{userId}:RefreshToken";
 
-            if (isRefreshToken)
-                return $"{userId}-RefreshToken";
-
-            return isMobile ? $"{userId}-Mobile-Token" : $"{userId}-Token";
+                //Web Token.
+                return $"{userId}:Token";
+            }
         }
     }
 }

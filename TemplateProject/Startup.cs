@@ -24,6 +24,7 @@ using Core.CoreContext;
 using Services.SecurityService;
 using Services.Users;
 using Services.Login;
+using Core;
 
 namespace TemplateProject
 {
@@ -47,6 +48,7 @@ namespace TemplateProject
             services.AddTransient<ILoginService, LoginService>();
             services.AddSingleton<ICoreContext, CoreContext>();
 
+            services.AddScoped<IWorkContext, WorkContext>();
             services.AddScoped<LoginFilter>();
 
             var mappingConfig = new MapperConfiguration(mc =>
@@ -117,6 +119,7 @@ namespace TemplateProject
                             },new List<string>()
                         }
                 });
+                c.OperationFilter<AddRequiredHeaderParameter>();
             });
 
             //3.1'de Destek Yok. services.AddSession();

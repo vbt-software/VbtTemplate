@@ -13,26 +13,34 @@ using Services;
 using Services.Customers;
 using AutoMapper;
 using Core.Filters.Customers;
+using TemplateProject.Infrastructure;
+using ServiceStack.DataAnnotations;
+using Core;
 
 namespace TemplateProject.Controllers
 {
+    [ServiceFilter(typeof(LoginFilter))]
     [ApiController]
     [Route("[controller]")]
     public class VbtController : ControllerBase
-    {       
+    {
         private readonly ICustomerService _customerService;
 
         private readonly IMapper _mapper;
 
         private readonly ILogger<VbtController> _logger;
 
-        public VbtController(ICustomerService customerService, IMapper mapper, ILogger<VbtController> logger)
+        private readonly IWorkContext _workContext;
+
+        public VbtController(ICustomerService customerService, IMapper mapper, ILogger<VbtController> logger, IWorkContext workContext)
         {
             _customerService = customerService;
             _mapper = mapper;
             _logger = logger;
+            _workContext = workContext;
         }
 
+        [Infrastructure.IgnoreAttribute] //LoginFilter'a takılmaz.
         [HttpGet]
         public ServiceResponse<CustomerListModel> GetCustomer()
         {
@@ -49,6 +57,10 @@ namespace TemplateProject.Controllers
             response.List = _customerService.GetById(CustomerID, 0).List;
             response.IsSuccessful = true;
             response.Count = response.List.Count;
+            //Get Global Variables
+            var userID = _workContext.CurrentUserId;
+            var IsMobile = _workContext.IsMobile;
+            //
             return response;
         }
         [HttpGet("GetCustomerList/{CustomerID?}/{CompanyName?}/{ContactName?}")]
@@ -69,7 +81,7 @@ namespace TemplateProject.Controllers
                 Orders = _mapper.Map<List<OrderModel>>(s.Orders)
             }).ToList();
             response.List = list;
-           
+
             response.IsSuccessful = true;
             response.Count = response.List.Count;
             return response;

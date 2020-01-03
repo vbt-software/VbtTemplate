@@ -87,12 +87,13 @@ namespace Services.Login
 
                 var createTime = DateTime.Now;
                 var cacheKey = _redisCacheService.GetTokenKey(user.Id, isMobile, false, model.UnqDeviceId);
-                _redisCacheService.Set(cacheKey, decToken, createTime.AddMinutes(_coreContext.TokenExpireTime));// 3 saatlik Token Açık Atılır.
+                _redisCacheService.Set(cacheKey, decToken, createTime.AddMinutes(_coreContext.TokenExpireTime));// 1 saatlik Token Açık Atılır.
 
                 DateTime tokenExpireTime = createTime.AddMinutes(_coreContext.RefreshTokenExpireTime);
                 if (isMobile)
                 {
-                    tokenExpireTime = createTime.AddDays(365);
+                    tokenExpireTime = createTime.AddMinutes(_coreContext.MobileRefreshTokenExpireTime);
+                    //tokenExpireTime = createTime.AddDays(365);
                 }
                 //RefreshToken
                 var refreshToken = _encryptionService.GenerateToken(user.Email);

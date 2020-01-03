@@ -21,6 +21,7 @@ namespace Core.CoreContext
         public string DefaultCultureName => _vbtConfig.Value.DefaultCultureName;
         public int TokenExpireTime => _vbtConfig.Value.TokenExpireTime;
         public int RefreshTokenExpireTime => _vbtConfig.Value.RefreshTokenExpireTime;
+        public int MobileRefreshTokenExpireTime => _vbtConfig.Value.MobileRefreshTokenExpireTime;
         public bool Contains(string source, string destination)
         {
             return CultureInfo.GetCultureInfo(DefaultCultureName)

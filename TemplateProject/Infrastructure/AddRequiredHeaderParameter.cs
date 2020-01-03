@@ -27,6 +27,22 @@ namespace TemplateProject.Infrastructure
                 Schema = new OpenApiSchema { Type = "bool" },
                 Required = false
             });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "RefreshToken",
+                In = ParameterLocation.Header,
+                Schema = new OpenApiSchema { Type = "string" },
+                Required = false
+            });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "MobileVersion",
+                In = ParameterLocation.Header,
+                Schema = new OpenApiSchema { Type = "string" },
+                Required = false
+            });            
         }
     }
 }

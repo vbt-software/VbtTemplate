@@ -20,6 +20,7 @@ namespace Core.Configuration
         public string EnvironmentName { get; set; }
         public int TokenExpireTime { get; set; }
         public int RefreshTokenExpireTime { get; set; }
+        public int MobileRefreshTokenExpireTime { get; set; }        
 
         #endregion
         public VbtConfig()

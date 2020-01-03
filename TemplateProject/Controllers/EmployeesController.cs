@@ -14,9 +14,11 @@ using Services.Customers;
 using AutoMapper;
 using Core.Filters.Customers;
 using Services.Employees;
+using TemplateProject.Infrastructure;
 
 namespace TemplateProject.Controllers
 {
+    [ServiceFilter(typeof(LoginFilter))]
     [ApiController]
     [Route("[controller]")]
     public class EmployeesController : ControllerBase
@@ -46,6 +48,14 @@ namespace TemplateProject.Controllers
             response.List = _employeesService.GetEmployeeTerritory("", 0, 10).List.ToList();
             response.IsSuccessful = true;
             response.Count = response.List.Count;
+            return response;
+        }
+
+        [Infrastructure.LogAttribute]
+        [HttpPost]
+        public ServiceResponse<EmployeeTerritory> UpdateEmployee([FromBody] EmployeeTerritory model)
+        {
+            var response = new ServiceResponse<EmployeeTerritory>(HttpContext);
             return response;
         }
     }

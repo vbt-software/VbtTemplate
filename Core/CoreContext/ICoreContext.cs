@@ -12,6 +12,7 @@ namespace Core.CoreContext
         string EnvironmentName { get; }
         int TokenExpireTime { get; }
         int RefreshTokenExpireTime { get; }
+        int MobileRefreshTokenExpireTime { get; }
         bool Contains(string source, string destination);
     }
 }
