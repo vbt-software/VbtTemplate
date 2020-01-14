@@ -80,39 +80,48 @@ namespace Services.Employees
                 return response;
             }
             else
-            {             
+            {
                 //BURAYI LINQ QUERY YAP
                 var query = (from emp in _employeesRepository.Table
-                            join emt in _employeeTerritoriesRepository.Table
-                            on emp.EmployeeId equals emt.EmployeeId
-                            join ter in _territoriesRepository.Table
-                            on emt.TerritoryId equals ter.TerritoryId
-                            join reg in _regionRepository.Table
-                            on ter.RegionId equals reg.RegionId
-                            where EF.Functions.Like(emp.LastName ?? string.Empty, $"%{lastName}%")
-                            orderby emp.EmployeeId
-                            select new EmployeeTerritory()
-                            {
-                                EmployeeId = emp.EmployeeId,
-                                FirstName=emp.FirstName,
-                                LastName = emp.LastName,
-                                Title = emp.Title,
-                                Territory = ter.TerritoryDescription,
-                                Region = reg.RegionDescription
-                            })
+                             join emt in _employeeTerritoriesRepository.Table
+                             on emp.EmployeeId equals emt.EmployeeId
+                             join ter in _territoriesRepository.Table
+                             on emt.TerritoryId equals ter.TerritoryId
+                             join reg in _regionRepository.Table
+                             on ter.RegionId equals reg.RegionId
+                             where EF.Functions.Like(emp.LastName ?? string.Empty, $"%{lastName}%")
+                             orderby emp.EmployeeId
+                             select new EmployeeTerritory()
+                             {
+                                 EmployeeId = emp.EmployeeId,
+                                 FirstName = emp.FirstName,
+                                 LastName = emp.LastName,
+                                 Title = emp.Title,
+                                 Territory = ter.TerritoryDescription,
+                                 Region = reg.RegionDescription
+                             })
                             .Skip(pageNo * pageSize)
                             .Take(pageSize)
-                            .ToList();            
-                var response = new ServiceResponse<EmployeeTerritory>(null); 
+                            .ToList();
+                var response = new ServiceResponse<EmployeeTerritory>(null);
                 response.List = query;
                 _redisCacheManager.Set(cacheKey, response.List);
                 return response;
             }
         }
 
-        public ServiceResponse<int> Update(CustomerModel model, int userId)
+        public ServiceResponse<DB.Entities.Employees> Update(EmployeeTerritory employeeTerritory)
         {
-            throw new NotImplementedException();
+            //Geri dönülecek kayıt
+            var response = new ServiceResponse<DB.Entities.Employees>(null);
+            //Güncellenecek kayıt
+            DB.Entities.Employees employee = _employeesRepository.Table.FirstOrDefault(e => e.EmployeeId == employeeTerritory.EmployeeId);
+            //Değişen kayıt uyuşan kolonları ile Employees'e dönüştürülür.
+            DB.Entities.Employees updateModel=_mapper.Map<DB.Entities.Employees>(employeeTerritory);
+            //Benzer kolonları atanır. Benzemeyen kolonlar null'a çekilir. Ve o alanlar güncellenmez :)
+            _employeesRepository.UpdateMatchEntity(employee, updateModel);      
+            response.Entity = employee;
+            return response;
         }
 
         public IServiceResponse<EmployeesModel> GetAll(int page, int pageSize, int userId)

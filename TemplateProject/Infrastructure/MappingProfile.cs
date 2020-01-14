@@ -28,6 +28,10 @@ namespace TemplateProject.Infrastructure
             #region Employees Mapper
             CreateMap<Employees, EmployeesModel>();
             CreateMap<EmployeesModel, Employees>();
+
+            //Employees Entity Modeli ile Custom EmployeeTerritory modelinin matchlenmesi için tanımlanmıştır.
+            CreateMap<Employees, EmployeeTerritory>();
+            CreateMap<EmployeeTerritory, Employees>();
             #endregion
 
             #region User Mapper

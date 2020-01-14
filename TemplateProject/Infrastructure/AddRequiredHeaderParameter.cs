@@ -42,7 +42,15 @@ namespace TemplateProject.Infrastructure
                 In = ParameterLocation.Header,
                 Schema = new OpenApiSchema { Type = "string" },
                 Required = false
-            });            
+            });
+            //Mobile için RedisKeyler'de UnqDeviceId eklenir.
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "UnqDeviceId",
+                In = ParameterLocation.Header,
+                Schema = new OpenApiSchema { Type = "string" },
+                Required = false
+            });
         }
     }
 }

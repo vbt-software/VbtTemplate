@@ -16,6 +16,7 @@ namespace Repository
         void Insert(IEnumerable<T> entities);
         void Update(T entity);
         void Update(IEnumerable<T> entities);
+        void UpdateMatchEntity(T updateEntity, T setEntity);
         void Delete(T entity);
         void Delete(IEnumerable<T> entities);
         IQueryable<T> IncludeMany(params Expression<Func<T, object>>[] includes);

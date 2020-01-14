@@ -78,6 +78,47 @@ namespace Repository
         }
 
         /// <summary>
+        ///     Update entities
+        /// </summary>
+        /// <param name="entities">Entities</param>
+        public virtual void UpdateMatchEntity(T updateEntity, T setEntity)
+        {
+            if (setEntity == null)
+                throw new ArgumentNullException(nameof(setEntity));
+
+            if (updateEntity == null)
+                throw new ArgumentNullException(nameof(updateEntity));
+
+            /*Custom Metadata Attribute'ü olan Entity Propertyleri Yakalanır 
+             Örneğin Bu örnekte[SetCurrentDate] attributes'ü atanmış colonlara bugünün Tarihi Global olarak atanır.
+             */
+            System.ComponentModel.DataAnnotations.MetadataTypeAttribute[] metadataTypes = setEntity.GetType().GetCustomAttributes(true).OfType<System.ComponentModel.DataAnnotations.MetadataTypeAttribute>().ToArray();
+            foreach (System.ComponentModel.DataAnnotations.MetadataTypeAttribute metadata in metadataTypes)
+            {
+                System.Reflection.PropertyInfo[] properties = metadata.MetadataClassType.GetProperties();
+                foreach (System.Reflection.PropertyInfo pi in properties)
+                {
+                    if (Attribute.IsDefined(pi, typeof(DB.PartialEntites.SetCurrentDate)))
+                    {
+                        // here it is found
+                        _context.Entry(setEntity).Property(pi.Name).CurrentValue = DateTime.Now;
+                    }
+                }
+            }
+            /*-------------------*/
+
+            _context.Entry(updateEntity).CurrentValues.SetValues(setEntity);//Tüm kayıtlar, kolon eşitlemesine gitmeden 1 entity'den diğerine atanır.
+
+            //Olmayan yani null gelen kolonlar, var olan tablonun üstüne ezilmesin diye ==> "IsModified = false" olarak atanır ve var olan kayıtların null olarak güncellenmesi engellenir.
+            foreach (var property in _context.Entry(setEntity).Properties)
+            {
+                if (property.CurrentValue == null) { _context.Entry(updateEntity).Property(property.Metadata.Name).IsModified = false; }
+            }
+
+            _context.SaveChanges();
+        }
+
+        /// <summary>
         ///     Delete entity
         /// </summary>
         /// <param name="entity">Entity</param>
@@ -128,5 +169,6 @@ namespace Repository
         ///     Entities
         /// </summary>
         protected virtual DbSet<T> Entities => _entities ?? (_entities = _context.Set<T>());
+
     }
 }

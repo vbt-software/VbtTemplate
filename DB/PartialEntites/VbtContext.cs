@@ -7,6 +7,8 @@ using System.Text;
 
 namespace DB.Entities
 {
+    /*Run This Command :
+     * dotnet ef dbcontext scaffold "Server=localhost\SQLEXPRESS;Database=Northwind;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer --output-dir Entities --force*/
     public class VbtContext : NorthwindContext
     {
         public VbtContext()
@@ -21,6 +23,6 @@ namespace DB.Entities
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.AddGlobalFilter();
-        }
+        } 
     }
 }

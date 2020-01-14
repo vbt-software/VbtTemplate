@@ -11,5 +11,7 @@ namespace Services.Employees
     {
         ServiceResponse<EmployeesModel> SearchEmployees(string name, int pageNo, int pageSize);
         ServiceResponse<EmployeeTerritory> GetEmployeeTerritory(string lastName, int pageNo, int pageSize);
+
+        ServiceResponse<DB.Entities.Employees> Update(EmployeeTerritory model);
     }
 }

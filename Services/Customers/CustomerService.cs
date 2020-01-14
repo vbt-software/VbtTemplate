@@ -14,6 +14,7 @@ namespace Services.Customers
 {
     public class CustomerService : ICustomerService
     {
+        //private readonly IRepository<DB.Entities.Customers> _customerRepository;
         private readonly IRepository<DB.Entities.Customers> _customerRepository;
         private readonly IRepository<DB.Entities.VwCustomerProducts> _customerProductRepository;
         private readonly IMapper _mapper;

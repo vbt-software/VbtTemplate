@@ -53,9 +53,10 @@ namespace TemplateProject.Controllers
 
         [Infrastructure.LogAttribute]
         [HttpPost]
-        public ServiceResponse<EmployeeTerritory> UpdateEmployee([FromBody] EmployeeTerritory model)
+        public ServiceResponse<Employees> UpdateEmployee([FromBody] EmployeeTerritory model)
         {
-            var response = new ServiceResponse<EmployeeTerritory>(HttpContext);
+            var response = new ServiceResponse<Employees>(HttpContext);
+            var updateEmployee = _employeesService.Update(model);
             return response;
         }
     }

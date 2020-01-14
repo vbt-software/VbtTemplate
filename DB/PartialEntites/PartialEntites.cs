@@ -11,7 +11,11 @@ namespace DB.Entities
     }
     public partial class Categories : BaseEntity, ISoftDeletable { }
     public partial class Customers : BaseEntity, ISoftDeletable { }
-    public partial class Employees : BaseEntity { }
+
+    //Employees Partial Class'ının var olan HireDate kolonuna [SetCurrentDate] attribute'ü eklenmiştir.
+    [MetadataType(typeof(EmployeeMetaData))]
+    public partial class Employees : BaseEntity{  }
+
     public partial class Territories : BaseEntity { }
     public partial class EmployeeTerritories : BaseEntity { }
     public partial class Region : BaseEntity { }
@@ -55,4 +59,11 @@ namespace DB.Entities
     //    public decimal Total { get; set; }
     //}
     #endregion
+    //Entity'de var olan bir sınıfın property'sini işaretlemek gerekir ise, aşağıdaki gibi MetaData yaratmak gerekir.
+    //SetCurrentDate Attribute ile General Repository'de güncelleme anında, ilgili işaretliyici ile yakalanan propertylere günümüz tarihi atanır.
+    public class EmployeeMetaData
+    {
+        [SetCurrentDate]
+        public DateTime? HireDate { get; set; }
+    }
 }
