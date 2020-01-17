@@ -34,6 +34,10 @@ namespace Repository
         {
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
+            //Set Default UsedTime Parameter ==> UsedTime BaseEntity Property.
+            _context.Entry(entity).Property("UsedTime").CurrentValue = DateTime.Now;
+            //---------------
+
             _entities.Add(entity);
             _context.SaveChanges();
         }
