@@ -16,6 +16,7 @@ using Core.Filters.Customers;
 using TemplateProject.Infrastructure;
 using ServiceStack.DataAnnotations;
 using Core;
+using static Core.Enums;
 
 namespace TemplateProject.Controllers
 {
@@ -39,7 +40,7 @@ namespace TemplateProject.Controllers
             _logger = logger;
             _workContext = workContext;
         }
-
+      
         [Infrastructure.IgnoreAttribute] //LoginFilter'a takılmaz.
         [HttpGet]
         public ServiceResponse<CustomerListModel> GetCustomer()
@@ -50,6 +51,7 @@ namespace TemplateProject.Controllers
             response.Count = response.List.Count;
             return response;
         }
+        [Infrastructure.RoleAttribute((int)RoleGroup.Customer, (Int64)CustomerRoles.GetCustomerById)] //LoginFilter'a takılmaz.
         [HttpGet("GetCustomerById/{CustomerID}")]
         public ServiceResponse<CustomerModel> GetCustomerById(string CustomerID)
         {

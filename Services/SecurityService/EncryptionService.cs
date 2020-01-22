@@ -1,4 +1,5 @@
 ﻿using Core.Configuration;
+using Core.CustomException;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -72,19 +73,26 @@ namespace Services.SecurityService
         //Example Password: 123456 ==> MTIzNDU2
         public string DecryptText(string text, string privateKey = "")
         {
-            if (string.IsNullOrEmpty(text) || text == "null")
-                return string.Empty;
-
-            if (string.IsNullOrEmpty(privateKey))
-                privateKey = _vbtConfig.Value.PrivateKey;
-
-            using (var provider = new TripleDESCryptoServiceProvider())
+            try
             {
-                provider.Key = Encoding.ASCII.GetBytes(privateKey.Substring(0, 16));
-                provider.IV = Encoding.ASCII.GetBytes(privateKey.Substring(8, 8));
+                if (string.IsNullOrEmpty(text) || text == "null")
+                    return string.Empty;
 
-                var buffer = Convert.FromBase64String(text);
-                return DecryptTextFromMemory(buffer, provider.Key, provider.IV);
+                if (string.IsNullOrEmpty(privateKey))
+                    privateKey = _vbtConfig.Value.PrivateKey;
+
+                using (var provider = new TripleDESCryptoServiceProvider())
+                {
+                    provider.Key = Encoding.ASCII.GetBytes(privateKey.Substring(0, 16));
+                    provider.IV = Encoding.ASCII.GetBytes(privateKey.Substring(8, 8));
+
+                    var buffer = Convert.FromBase64String(text);
+                    return DecryptTextFromMemory(buffer, provider.Key, provider.IV);
+                }
+            }
+            catch
+            {
+                throw new InvalidTokenException();
             }
         }
         public (string encToken, string decToken) GenerateToken(string emailUser)

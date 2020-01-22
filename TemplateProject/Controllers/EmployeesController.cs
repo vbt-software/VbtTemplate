@@ -15,6 +15,7 @@ using AutoMapper;
 using Core.Filters.Customers;
 using Services.Employees;
 using TemplateProject.Infrastructure;
+using static Core.Enums;
 
 namespace TemplateProject.Controllers
 {
@@ -32,6 +33,7 @@ namespace TemplateProject.Controllers
         }
 
         [HttpGet]
+        [Infrastructure.RoleAttribute((int)RoleGroup.Employee, (Int64)EmployeeRoles.GetEmployees)] //LoginFilter'a takılmaz.
         public ServiceResponse<EmployeesModel> GetEmployees()
         {
             var response = new ServiceResponse<EmployeesModel>(HttpContext);

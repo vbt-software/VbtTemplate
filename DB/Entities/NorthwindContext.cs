@@ -37,6 +37,8 @@ namespace DB.Entities
         public virtual DbSet<ProductsByCategory> ProductsByCategory { get; set; }
         public virtual DbSet<QuarterlyOrders> QuarterlyOrders { get; set; }
         public virtual DbSet<Region> Region { get; set; }
+        public virtual DbSet<RoleGroups> RoleGroups { get; set; }
+        public virtual DbSet<Roles> Roles { get; set; }
         public virtual DbSet<SalesByCategory> SalesByCategory { get; set; }
         public virtual DbSet<SalesTotalsByAmount> SalesTotalsByAmount { get; set; }
         public virtual DbSet<Shippers> Shippers { get; set; }
@@ -44,6 +46,7 @@ namespace DB.Entities
         public virtual DbSet<SummaryOfSalesByYear> SummaryOfSalesByYear { get; set; }
         public virtual DbSet<Suppliers> Suppliers { get; set; }
         public virtual DbSet<Territories> Territories { get; set; }
+        public virtual DbSet<UserRoles> UserRoles { get; set; }
         public virtual DbSet<Users> Users { get; set; }
         public virtual DbSet<VwCustomerProducts> VwCustomerProducts { get; set; }
 
@@ -687,6 +690,41 @@ namespace DB.Entities
                     .IsFixedLength();
             });
 
+            modelBuilder.Entity<RoleGroups>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.GroupName)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.IsDeleted)
+                    .HasColumnName("isDeleted")
+                    .HasDefaultValueSql("((0))");
+            });
+
+            modelBuilder.Entity<Roles>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.GroupId).HasColumnName("GroupID");
+
+                entity.Property(e => e.IsDeleted)
+                    .HasColumnName("isDeleted")
+                    .HasDefaultValueSql("((0))");
+
+                entity.Property(e => e.RoleId).HasColumnName("RoleID");
+
+                entity.Property(e => e.RoleName)
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.Group)
+                    .WithMany(p => p.Roles)
+                    .HasForeignKey(d => d.GroupId)
+                    .HasConstraintName("FK_Roles_RoleGroups");
+            });
+
             modelBuilder.Entity<SalesByCategory>(entity =>
             {
                 entity.HasNoKey();
@@ -822,6 +860,25 @@ namespace DB.Entities
                     .HasConstraintName("FK_Territories_Region");
             });
 
+            modelBuilder.Entity<UserRoles>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.RoleGroupId).HasColumnName("RoleGroupID");
+
+                entity.Property(e => e.UserId).HasColumnName("UserID");
+
+                entity.HasOne(d => d.RoleGroup)
+                    .WithMany(p => p.UserRoles)
+                    .HasForeignKey(d => d.RoleGroupId)
+                    .HasConstraintName("FK_UserRoles_RoleGroups");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserRoles)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK_UserRoles_Users");
+            });
+
             modelBuilder.Entity<Users>(entity =>
             {
                 entity.Property(e => e.Email)
@@ -845,7 +902,7 @@ namespace DB.Entities
                     .IsUnicode(false);
 
                 entity.Property(e => e.PasswordHash)
-                    .HasMaxLength(50)
+                    .HasMaxLength(250)
                     .IsUnicode(false);
 
                 entity.Property(e => e.UserName)

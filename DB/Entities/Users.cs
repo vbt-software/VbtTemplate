@@ -5,6 +5,11 @@ namespace DB.Entities
 {
     public partial class Users
     {
+        public Users()
+        {
+            UserRoles = new HashSet<UserRoles>();
+        }
+
         public int Id { get; set; }
         public string Name { get; set; }
         public string LastName { get; set; }
@@ -14,5 +19,7 @@ namespace DB.Entities
         public string Email { get; set; }
         public string Gsm { get; set; }
         public bool IsDeleted { get; set; }
+
+        public virtual ICollection<UserRoles> UserRoles { get; set; }
     }
 }

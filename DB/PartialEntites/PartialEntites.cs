@@ -14,7 +14,7 @@ namespace DB.Entities
 
     //Employees Partial Class'ının var olan HireDate kolonuna [SetCurrentDate] attribute'ü eklenmiştir.
     [MetadataType(typeof(EmployeeMetaData))]
-    public partial class Employees : BaseEntity{  }
+    public partial class Employees : BaseEntity { }
 
     public partial class Territories : BaseEntity { }
     public partial class EmployeeTerritories : BaseEntity { }
@@ -23,6 +23,9 @@ namespace DB.Entities
     public partial class Orders : BaseEntity { }
     public partial class Products : BaseEntity { }
     public partial class Users : BaseEntity, ISoftDeletable { }
+    public partial class Roles : BaseEntity { }
+    public partial class RoleGroups : BaseEntity { }
+    public partial class UserRoles : BaseEntity { }
 
     #region Views 
     [Table("Sales by Category")]

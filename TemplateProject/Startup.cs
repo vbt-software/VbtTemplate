@@ -25,6 +25,7 @@ using Services.SecurityService;
 using Services.Users;
 using Services.Login;
 using Core;
+using Services.Roles;
 
 namespace TemplateProject
 {
@@ -46,6 +47,7 @@ namespace TemplateProject
             services.AddTransient<IEmployeesService, EmployeesService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<ILoginService, LoginService>();
+            services.AddTransient<IRoleService, RoleService>();
             services.AddSingleton<ICoreContext, CoreContext>();
 
             services.AddScoped<IWorkContext, WorkContext>();
