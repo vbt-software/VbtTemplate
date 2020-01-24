@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Services.Login;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.Extensions.Localization;
 
 namespace TemplateProject.Controllers
 {
@@ -33,10 +34,13 @@ namespace TemplateProject.Controllers
         private readonly ICoreContext _coreContext;
         private readonly ILoginService _loginService;
 
-        public LoginController(ICoreContext coreContext, ILoginService loginService)
+        private readonly IStringLocalizer<VbtController> _localizer;
+
+        public LoginController(ICoreContext coreContext, ILoginService loginService, IStringLocalizer<VbtController> localizer)
         {
             _coreContext = coreContext;
             _loginService = loginService;
+            _localizer = localizer;
         }
 
         //Salt : MVvZKOwLX9G0yWwDChW3Xg==
@@ -63,7 +67,8 @@ namespace TemplateProject.Controllers
                 //Gelen Mobile cihaz tanımlı versiyonlardan biri değilse Store'a yönlendirilir.
                 if (!mobileVersions.Any(s => s == mobileVersion))
                 {
-                    const string message = "Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.";
+                    //const string message = "Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.";
+                    string message = _localizer["NewVersion"];
                     return new ObjectResult(new LoginResultModel { UserId = -2, ExceptionMessage = message });
                 }
             }

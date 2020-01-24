@@ -8,11 +8,13 @@ using Core.Models.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Localization;
 using Services.Roles;
 using Services.SecurityService;
 using Services.Users;
 using System;
 using System.Linq;
+using TemplateProject.Controllers;
 
 namespace TemplateProject.Infrastructure
 {
@@ -25,8 +27,12 @@ namespace TemplateProject.Infrastructure
         private readonly ICoreContext _coreContext;
         private readonly IWorkContext _workContext;
 
+        private readonly IStringLocalizer<VbtController> _localizer;
+
+        private static readonly object lockObject = new object();
+
         public LoginFilter(IRedisCacheService redisCacheService, IEncryptionService encryptionService,
-            IUserService userService, ICoreContext coreContext, IWorkContext workContext, IRoleService roleService)
+            IUserService userService, ICoreContext coreContext, IWorkContext workContext, IRoleService roleService, IStringLocalizer<VbtController> localizer)
         {
             _redisCacheService = redisCacheService;
             _encryptionService = encryptionService;
@@ -34,6 +40,7 @@ namespace TemplateProject.Infrastructure
             _userService = userService;
             _workContext = workContext;
             _roleService = roleService;
+            _localizer = localizer;
         }
 
         public void OnActionExecuting(ActionExecutingContext context)
@@ -205,7 +212,9 @@ namespace TemplateProject.Infrastructure
                             //Forbidden 403 Result. Yetkiniz Yoktur..
                             context.Result = new ObjectResult(context.ModelState)
                             {
-                                Value = null,
+                                //Value = null,
+                                //Value = "You are not authorized for this page",
+                                Value = _localizer["Forbidden"],
                                 StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status403Forbidden
                             };
                             return;
@@ -245,7 +254,8 @@ namespace TemplateProject.Infrastructure
                 //Forbidden 430 Result. Yetkiniz Yoktur..
                 context.Result = new ObjectResult(context.ModelState)
                 {
-                    Value = "Invalid Token Execption." + ex.Message,
+                    //Value = "Invalid Token Execption." + ex.Message,
+                    Value = _localizer["TokenException"] + ex.Message,
                     StatusCode = 430
                 };
                 return;

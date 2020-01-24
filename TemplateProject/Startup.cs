@@ -1,31 +1,30 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AutoMapper;
+using Core;
 using Core.Caching;
 using Core.Configuration;
+using Core.CoreContext;
 using DB.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
 using Repository;
 using Services.Customers;
 using Services.Employees;
-using Microsoft.OpenApi.Models;
-using TemplateProject.Infrastructure;
-using Core.CoreContext;
+using Services.Login;
+using Services.Roles;
 using Services.SecurityService;
 using Services.Users;
-using Services.Login;
-using Core;
-using Services.Roles;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using TemplateProject.Infrastructure;
 
 namespace TemplateProject
 {
@@ -70,6 +69,24 @@ namespace TemplateProject
                .AllowAnyHeader()));
 
             // Register the Swagger generator, defining one or more Swagger documents
+
+            //Add Localization             
+            services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+            services.Configure<RequestLocalizationOptions>(options =>
+            {
+                var supportedCultures = new[]
+                {
+                    new CultureInfo("tr-TR"),
+                    new CultureInfo("en-US")
+                };
+
+                //options.DefaultRequestCulture = new RequestCulture(culture: "en-US", uiCulture: "en-US");
+                options.DefaultRequestCulture = new RequestCulture("tr-TR","tr-TR");
+                options.SupportedCultures = supportedCultures;
+                options.SupportedUICultures = supportedCultures;
+            });
+            //End Localization
 
             services.AddSwaggerGen(c =>
             {
@@ -153,6 +170,28 @@ namespace TemplateProject
 
             app.UseCors("AllowAll");
 
+            //Add Localization
+            //var localizationOption = app.ApplicationServices.GetService<IOptions<RequestLocalizationOptions>>();
+            //app.UseRequestLocalization(localizationOption.Value);
+            var options = app.ApplicationServices.GetService<IOptions<RequestLocalizationOptions>>();
+            var cookieProvider = options.Value.RequestCultureProviders
+                .OfType<CookieRequestCultureProvider>()
+                .First();
+            var urlProvider = options.Value.RequestCultureProviders
+                .OfType<QueryStringRequestCultureProvider>().First();
+
+            //Set Cookie for default Language
+            cookieProvider.Options.DefaultRequestCulture = new RequestCulture("tr-TR");
+            urlProvider.Options.DefaultRequestCulture = new RequestCulture("tr-TR");
+
+            cookieProvider.CookieName = "UserCulture";
+
+            options.Value.RequestCultureProviders.Clear();
+            options.Value.RequestCultureProviders.Add(cookieProvider);
+            options.Value.RequestCultureProviders.Add(urlProvider);
+            app.UseRequestLocalization(options.Value);
+            //Finish Localization--------------------------------------------
+
             app.UseSwagger()
            .UseSwaggerUI(c =>
            {
@@ -162,7 +201,6 @@ namespace TemplateProject
                //TODO: Or alternatively use the original Swagger contract that's included in the static files
                // c.SwaggerEndpoint("/swagger-original.json", "Swagger Petstore Original");
            });
-
         }
     }
 }
