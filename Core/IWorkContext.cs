@@ -12,5 +12,6 @@ namespace Core
         int CurrentUserId { get; set; }
 
         bool IsMobile { get; set; }
+        bool IsAdmin { get; set; }
     }
 }

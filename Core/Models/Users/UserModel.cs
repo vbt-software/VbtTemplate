@@ -15,5 +15,6 @@ namespace Core.Models.Users
         public string Email { get; set; }
         public string Gsm { get; set; }
         public bool IsDeleted { get; set; }
+        public bool IsAdmin { get; set; }
     }
 }

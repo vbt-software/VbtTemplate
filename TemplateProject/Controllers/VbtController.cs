@@ -17,6 +17,9 @@ using TemplateProject.Infrastructure;
 using ServiceStack.DataAnnotations;
 using Core;
 using static Core.Enums;
+using Core.Models.Roles;
+using Services.Roles;
+using Services.Users;
 
 namespace TemplateProject.Controllers
 {
@@ -27,20 +30,26 @@ namespace TemplateProject.Controllers
     {
         private readonly ICustomerService _customerService;
 
+        private readonly IRoleService _roleService;
+
         private readonly IMapper _mapper;
 
         private readonly ILogger<VbtController> _logger;
 
         private readonly IWorkContext _workContext;
 
-        public VbtController(ICustomerService customerService, IMapper mapper, ILogger<VbtController> logger, IWorkContext workContext)
+        private readonly IUserService _userService;
+
+        public VbtController(ICustomerService customerService, IMapper mapper, ILogger<VbtController> logger, IWorkContext workContext, IRoleService roleService, IUserService userService)
         {
             _customerService = customerService;
             _mapper = mapper;
             _logger = logger;
             _workContext = workContext;
+            _roleService = roleService;
+            _userService = userService;
         }
-      
+
         [Infrastructure.IgnoreAttribute] //LoginFilter'a takılmaz.
         [HttpGet]
         public ServiceResponse<CustomerListModel> GetCustomer()
@@ -84,6 +93,33 @@ namespace TemplateProject.Controllers
             }).ToList();
             response.List = list;
 
+            response.IsSuccessful = true;
+            response.Count = response.List.Count;
+            return response;
+        }
+        [HttpGet("GetUserRolesByPage")]
+        public ServiceResponse<RoleModel> GetUserRolesByPage()
+        {
+            var response = new ServiceResponse<RoleModel>(HttpContext);
+
+            int roleGroupID = (int)RoleGroup.Customer;
+            //Get Global Variables
+            var userID = _workContext.CurrentUserId;
+
+            var modelList = _roleService.GetRoleListByGroupId(userID, roleGroupID).List;
+            response.List = modelList;
+
+            response.IsSuccessful = true;
+            response.Count = response.List.Count;
+            return response;
+        }
+
+        [Infrastructure.AdminAttribute()] //AdminFilter
+        [HttpGet("SetUserAdminRole/{userID}/{isAdmin}")]
+        public ServiceResponse<RoleModel> SetUserAdminRole(int userID, bool isAdmin)
+        {
+            var response = new ServiceResponse<RoleModel>(HttpContext);
+            _userService.UpdateAdmin(userID, isAdmin);
             response.IsSuccessful = true;
             response.Count = response.List.Count;
             return response;

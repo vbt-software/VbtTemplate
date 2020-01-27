@@ -19,6 +19,7 @@ namespace DB.Entities
         public string Email { get; set; }
         public string Gsm { get; set; }
         public bool IsDeleted { get; set; }
+        public bool? IsAdmin { get; set; }
 
         public virtual ICollection<UserRoles> UserRoles { get; set; }
     }

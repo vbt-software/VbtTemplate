@@ -16,6 +16,9 @@ using Core.Filters.Customers;
 using Services.Employees;
 using TemplateProject.Infrastructure;
 using static Core.Enums;
+using Core.Models.Roles;
+using Core;
+using Services.Roles;
 
 namespace TemplateProject.Controllers
 {
@@ -26,10 +29,15 @@ namespace TemplateProject.Controllers
     {
         private readonly IEmployeesService _employeesService;
         private readonly IMapper _mapper;
-        public EmployeesController(IMapper mapper, IEmployeesService employeesService)
+        private readonly IWorkContext _workContext;
+        private readonly IRoleService _roleService;
+
+        public EmployeesController(IMapper mapper, IEmployeesService employeesService, IWorkContext workContext, IRoleService roleService)
         {
             _employeesService = employeesService;
             _mapper = mapper;
+            _roleService = roleService;
+            _workContext = workContext;
         }
 
         [HttpGet]
@@ -59,6 +67,23 @@ namespace TemplateProject.Controllers
         {
             var response = new ServiceResponse<Employees>(HttpContext);
             var updateEmployee = _employeesService.Update(model);
+            return response;
+        }
+
+        [HttpGet("GetUserRolesByPage")]
+        public ServiceResponse<RoleModel> GetUserRolesByPage()
+        {
+            var response = new ServiceResponse<RoleModel>(HttpContext);
+
+            int roleGroupID = (int)RoleGroup.Employee;
+            //Get Global Variables
+            var userID = _workContext.CurrentUserId;
+
+            var modelList = _roleService.GetRoleListByGroupId(userID, roleGroupID).List;
+            response.List = modelList;
+
+            response.IsSuccessful = true;
+            response.Count = response.List.Count;
             return response;
         }
     }

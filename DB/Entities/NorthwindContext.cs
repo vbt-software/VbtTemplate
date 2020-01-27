@@ -889,6 +889,8 @@ namespace DB.Entities
                     .HasMaxLength(50)
                     .IsUnicode(false);
 
+                entity.Property(e => e.IsAdmin).HasDefaultValueSql("((0))");
+
                 entity.Property(e => e.LastName)
                     .HasMaxLength(50)
                     .IsUnicode(false);

@@ -53,5 +53,19 @@ namespace Services.Users
         {
             throw new NotImplementedException();
         }
+        public IServiceResponse<UserModel> UpdateAdmin(int userId, bool isAdmin = true)
+        {
+            var response = new ServiceResponse<UserModel>(null);
+            var user = _usersRepository.GetById(userId);
+            if (user != null)
+            {
+                user.IsAdmin = isAdmin;
+                _usersRepository.Update(user);
+                var model = _mapper.Map<UserModel>(user);
+                response.IsSuccessful = true;
+                response.Entity = model;
+            }
+            return response;
+        }
     }
 }

@@ -120,6 +120,9 @@
   <data name="Forbidden" xml:space="preserve">
     <value>Bora You are not authorized for this page</value>
   </data>
+  <data name="ForbiddenAdmin" xml:space="preserve">
+    <value>You are not Admin for this Action</value>
+  </data>
   <data name="NewVersion" xml:space="preserve">
     <value>Please download the new version of the application from the store.</value>
   </data>

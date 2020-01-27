@@ -64,6 +64,13 @@ namespace TemplateProject.Infrastructure
                 _workContext.CurrentUserId = userId;
                 _workContext.IsMobile = isMobile;
                 //--------------------------------------
+                //Set UserIsAdmin
+                UserModel user = _userService.GetById(userId).Entity;
+                if (user != null)
+                {
+                    _workContext.IsAdmin = user.IsAdmin;
+                }
+                //---------------------
 
                 string authHeader = context.HttpContext.Request.Headers["Authorization"];
                 //Not: Bu durum sadece Web ortamı için geçerlidir. Mobilden her zaman Token gelmektedir.
@@ -151,7 +158,31 @@ namespace TemplateProject.Infrastructure
                     //if (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime - 15 && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime)
                     if ((string.IsNullOrEmpty(cacheRedistoken) == false) && (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime - 15 && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime))
                     {
-                        CreateTokensByCheckRefreshToken(context);
+                        //------------CheckTime On Redis              
+
+                        //İlgili UserID'ye ait Token Redis'den alınır.
+                        cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+                        var redisToken = cacheRedistoken.Split('ß')[2];
+                        var redisTokenCreateTime = DateTime.Parse(redisToken);
+                        var redisTokenTime = DateTime.Now - redisTokenCreateTime;
+
+                        //------------End CheckTime on Redis
+                        //Check TimeOut 2. Time for Backend Redis!
+                        if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+                        {
+                            lock (lockObject)
+                            {
+                                //Double Check Lock With Redis Key!
+                                cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+                                redisToken = cacheRedistoken.Split('ß')[2];
+                                redisTokenCreateTime = DateTime.Parse(redisToken);
+                                redisTokenTime = DateTime.Now - redisTokenCreateTime;
+                                if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+                                {
+                                    CreateTokensByCheckRefreshToken(context);
+                                }
+                            }
+                        }
                         #region CreateTokensByCheckRefreshToken Methodu Altına Taşındı.
                         //if (context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault() != null) // client refresh token göndermiş.
                         //{
@@ -198,7 +229,7 @@ namespace TemplateProject.Infrastructure
                 }
 
                 //Role Yetkisine bakılır.
-                if (HasRoleAttribute(context))
+                if (HasRoleAttribute(context) && !_workContext.IsAdmin)
                 {
                     try
                     {
@@ -224,6 +255,18 @@ namespace TemplateProject.Infrastructure
                     {
                         int i = 0;
                     }
+                }
+                else if (HasAdminAttribute(context) && !_workContext.IsAdmin)//User'a Admin yetkisinin verilmesi ya da alınması yetkisine bakılır.
+                {
+                    //Forbidden 403 Result. Yetkiniz Yoktur..
+                    context.Result = new ObjectResult(context.ModelState)
+                    {
+                        //Value = null,
+                        //Value = "You are not Admin for this Action",
+                        Value = _localizer["ForbiddenAdmin"],
+                        StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status403Forbidden
+                    };
+                    return;
                 }
                 else
                 {
@@ -349,6 +392,10 @@ namespace TemplateProject.Infrastructure
         public bool HasRoleAttribute(FilterContext context)
         {
             return ((ControllerActionDescriptor)context.ActionDescriptor).MethodInfo.CustomAttributes.Any(filterDescriptors => filterDescriptors.AttributeType == typeof(RoleAttribute));
+        }
+        public bool HasAdminAttribute(FilterContext context)
+        {
+            return ((ControllerActionDescriptor)context.ActionDescriptor).MethodInfo.CustomAttributes.Any(filterDescriptors => filterDescriptors.AttributeType == typeof(AdminAttribute));
         }
 
         public string GenerateRefreshToken(UserModel user, ActionExecutingContext context, string unqDeviceId, bool isMobile)

@@ -120,6 +120,9 @@
   <data name="Forbidden" xml:space="preserve">
     <value>Bu sayfa için, geçerli bir yetkiniz yoktur.</value>
   </data>
+  <data name="ForbiddenAdmin" xml:space="preserve">
+    <value>Bu işlem için Admin yetkisi gerekmektedir.</value>
+  </data>
   <data name="NewVersion" xml:space="preserve">
     <value>Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.</value>
   </data>

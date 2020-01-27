@@ -8,5 +8,6 @@ namespace Core
     {
         public int CurrentUserId { get; set; }
         public bool IsMobile { get; set; }
+        public bool IsAdmin { get; set; }
     }
 }
