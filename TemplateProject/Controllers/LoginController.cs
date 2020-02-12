@@ -24,6 +24,8 @@ using Newtonsoft.Json;
 using Services.Login;
 using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.Extensions.Localization;
+using Core;
+using TemplateProject.Infrastructure;
 
 namespace TemplateProject.Controllers
 {
@@ -36,11 +38,14 @@ namespace TemplateProject.Controllers
 
         private readonly IStringLocalizer<VbtController> _localizer;
 
-        public LoginController(ICoreContext coreContext, ILoginService loginService, IStringLocalizer<VbtController> localizer)
+        private readonly IWorkContext _workContext;
+
+        public LoginController(ICoreContext coreContext, ILoginService loginService, IStringLocalizer<VbtController> localizer, IWorkContext workContext)
         {
             _coreContext = coreContext;
             _loginService = loginService;
             _localizer = localizer;
+            _workContext = workContext;
         }
 
         //Salt : MVvZKOwLX9G0yWwDChW3Xg==
@@ -73,7 +78,46 @@ namespace TemplateProject.Controllers
                 }
             }
             var loginResultModel = _loginService.CheckLogin(model).Entity;
+            string errorCode = loginResultModel.ExceptionMessage;
+            if (errorCode != null)
+            {
+                loginResultModel.ExceptionMessage = _localizer[errorCode];
+            }
             return new ObjectResult(loginResultModel);
         }
+
+        [ServiceFilter(typeof(LoginFilter))]
+        [Route("GetOnBeHalfOfPassword")]
+        [HttpPost]
+        public IActionResult GetOnBeHalfofPassword()
+        {
+            var userID = _workContext.CurrentUserId;
+            var loginResultModel = _loginService.GetOnBeHalfofPassword(userID).Entity;
+            return new ObjectResult(loginResultModel);
+        }
+
+        [ServiceFilter(typeof(LoginFilter))]
+        [Route("LoginAsBeHalfof/{beHalfofPassword}")]
+        [HttpPost]
+        public IActionResult LoginAsBeHalfof(string beHalfofPassword)
+        {
+            if (!string.IsNullOrEmpty(beHalfofPassword))
+            {
+                var userID = _workContext.CurrentUserId;
+                var loginResultModel = _loginService.CheckBeHalfofPassword(beHalfofPassword).Entity;
+                loginResultModel.UserId = userID;
+                if (loginResultModel.BeHalfOfPassword == "")
+                {
+                    return new ObjectResult(loginResultModel)
+                    {
+                        Value = _localizer["BeHalfofTokenException"],
+                        StatusCode = 431
+                    };
+                }
+                return new ObjectResult(loginResultModel);
+            }
+            return new ObjectResult(null);
+        }
+
     }
 }

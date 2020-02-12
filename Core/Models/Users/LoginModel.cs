@@ -10,7 +10,7 @@ namespace Core.Models.Users
         public string Password { get; set; }
         public bool IsMobile { get; set; } = false; //Set Default Value
         public string UnqDeviceId { get; set; }
-       
+
     }
 
     public class LoginResultModel
@@ -18,6 +18,10 @@ namespace Core.Models.Users
         public int UserId { get; set; }
         public string Name { get; set; }
         public string UserName { get; set; }
+        public bool IsAdmin { get; set; }
+        public string BeHalfOfPassword { get; set; }
+        public string BeHalfOfToken{ get; set; }
+        public string BeHalfOfUserId { get; set; }
         public string Token { get; set; }
         public string RefreshToken { get; set; }
         public long CreatedTokenTime { get; set; }

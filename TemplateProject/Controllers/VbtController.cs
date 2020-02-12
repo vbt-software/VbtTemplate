@@ -53,7 +53,7 @@ namespace TemplateProject.Controllers
         [Infrastructure.IgnoreAttribute] //LoginFilter'a takılmaz.
         [HttpGet]
         public ServiceResponse<CustomerListModel> GetCustomer()
-        {
+        {          
             var response = new ServiceResponse<CustomerListModel>(HttpContext);
             response.List = _customerService.SearchCustomer("", 0, 10).List.ToList();
             response.IsSuccessful = true;

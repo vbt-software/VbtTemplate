@@ -17,5 +17,8 @@ namespace Core.Caching
         void Clear();
         int Count(string key);
         string GetTokenKey(int userId, bool isMobile, bool isRefreshToken, string unqDeviceId);
+        string GetTokenKeyForBeHalfOf(int userId);
+        string GetKeyWithBeHalfOfPassword(string beHalfofPassword, out string beHalfofUserId);
+        string GetTokenKeyForBeHalfOf(int userId, string password);
     }
 }

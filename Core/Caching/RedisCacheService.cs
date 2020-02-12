@@ -170,5 +170,42 @@ namespace Core.Caching
                 return $"{userId}:Token";
             }
         }
+
+        public string GetTokenKeyForBeHalfOf(int userId)
+        {
+            string password = $"{CreatePassword(8)}@{userId}";
+            return $"{userId}:BeHalfOfToken:{password}";
+        }
+
+        public string GetTokenKeyForBeHalfOf(int userId, string password)
+        {
+            return $"{userId}:BeHalfOfToken:{password}";
+        }
+
+        public string GetKeyWithBeHalfOfPassword(string beHalfofPassword, out string beHalfofUserId)
+        {
+            if (!string.IsNullOrEmpty(beHalfofPassword) && beHalfofPassword.Split('@').Length > 1)
+            {
+                beHalfofUserId = beHalfofPassword.Split('@')[1];
+                return $"{beHalfofUserId}:BeHalfOfToken:{beHalfofPassword}";
+            }
+            else
+            {
+                beHalfofUserId = string.Empty;
+                return string.Empty;
+            }
+        }
+
+        public string CreatePassword(int length)
+        {
+            const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            StringBuilder res = new StringBuilder();
+            Random rnd = new Random();
+            while (0 < length--)
+            {
+                res.Append(valid[rnd.Next(valid.Length)]);
+            }
+            return res.ToString();
+        }
     }
 }

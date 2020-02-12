@@ -38,14 +38,27 @@ namespace Services.Login
                 //Client'dan encrypted olarak gelen Password Decrypt edilir.
                 //Example Password: vbt123456 ==> dmJ0MTIzNDU2
                 decPassword = _encryptionService.DecryptFromClientData(model.Password);
+                if (model.Password != "" && decPassword == "")
+                {
+                    //string message = "Şifre işleminde bir problem yaşandı lütfen teknik destek alın.";
+                    string message = "PasswordError";
+                    //                    if (isMobile)
+                    //                        message = "Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.";
+                    var response = new ServiceResponse<LoginResultModel>(null);
+                    response.Entity = new LoginResultModel { UserId = -2, ExceptionMessage = message };
+                    response.IsSuccessful = false;
+                    return response;
+                }
             }
             catch
             {
-                string message = "Şifre işleminde bir problem yaşandı lütfen teknik destek alın.";
-                if (isMobile)
-                    message = "Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.";
+                //string message = "Şifre işleminde bir problem yaşandı lütfen teknik destek alın.";
+                string message = "PasswordError";
+                //                if (isMobile)
+                //                    message = "Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.";
                 var response = new ServiceResponse<LoginResultModel>(null);
                 response.Entity = new LoginResultModel { UserId = -2, ExceptionMessage = message };
+                response.IsSuccessful = false;
                 return response;
             }
             var user = IsValidUserAndPasswordCombination(model.UserName, decPassword);
@@ -64,8 +77,10 @@ namespace Services.Login
 
                         if (string.IsNullOrEmpty(controlKey))
                         {
-                            var response2 = new ServiceResponse<LoginResultModel>(null);
-                            response2.Entity = new LoginResultModel { UserId = -1, ExceptionMessage = "En fazla 2 farklı mobil cihazdan giriş yapabilirsiniz." };
+                            var response2 = new ServiceResponse<LoginResultModel>(null);                            
+                            //response2.Entity = new LoginResultModel { UserId = -1, ExceptionMessage = "En fazla 2 farklı mobil cihazdan giriş yapabilirsiniz." };
+                            response2.Entity = new LoginResultModel { UserId = -1, ExceptionMessage = "OverMobileUsageExeception" };
+                            response2.IsSuccessful = false;
                             return response2;
                         }
 
@@ -79,6 +94,7 @@ namespace Services.Login
                     UserName = user.UserName,
                     Name = user.Name,
                     UserId = user.Id,
+                    IsAdmin = user.IsAdmin,
                 };
 
                 //Token
@@ -103,6 +119,7 @@ namespace Services.Login
                 loginResultModel.CreatedTokenTime = createTime.GetTotalMilliSeconds();
                 var response = new ServiceResponse<LoginResultModel>(null);
                 response.Entity = loginResultModel;
+                response.IsSuccessful = true;
                 return response;
             }
             else
@@ -110,7 +127,8 @@ namespace Services.Login
                 var loginResultModel = new LoginResultModel();
                 var response = new ServiceResponse<LoginResultModel>(null);
                 response.Entity = loginResultModel;
-                return response;              
+                response.IsSuccessful = false;
+                return response;
             }
         }
         private UserModel IsValidUserAndPasswordCombination(string username, string password/*, out bool hasChangePassword*/)
@@ -144,6 +162,60 @@ namespace Services.Login
                 return userData;
             }
             return null;
+        }
+
+        public ServiceResponse<LoginResultModel> CheckBeHalfofPassword(string _beHalfOfPassword)
+        {
+            string beHalfOfPassword = _encryptionService.DecryptFromClientData(_beHalfOfPassword); //Client'da şifrelenen Password, DecryptFromClientData ile Decrypt edilir.
+
+            string beHalfOfKey = _redisCacheService.GetKeyWithBeHalfOfPassword(beHalfOfPassword, out string beHalfofUserId);
+            var beHalfOfToken = _redisCacheService.Get<string>(beHalfOfKey);
+            var loginResultModel = new LoginResultModel
+            {
+                BeHalfOfPassword = beHalfOfPassword,
+                BeHalfOfToken = _encryptionService.EncryptText(beHalfOfToken),
+                BeHalfOfUserId = beHalfofUserId,
+            };
+            var response = new ServiceResponse<LoginResultModel>(null);
+            response.Entity = loginResultModel;
+            return response;
+        }
+        public ServiceResponse<LoginResultModel> GetOnBeHalfofPassword(int userId)
+        {
+            var user = _userRepository.Table.FirstOrDefault(k => k.Id.Equals(userId));
+
+            if (user != null)
+            {
+                var loginResultModel = new LoginResultModel
+                {
+                    UserName = user.UserName,
+                    Name = user.Name,
+                    UserId = user.Id,
+                };
+
+                //Token
+                var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
+                loginResultModel.BeHalfOfToken = encToken;
+
+                var createTime = DateTime.Now;
+                var cacheKey = _redisCacheService.GetTokenKeyForBeHalfOf(user.Id);
+                _redisCacheService.Set(cacheKey, decToken, createTime.AddMinutes(_coreContext.TokenBeHalfOfExpireTime));// 1 saatlik TokenBeHalfOf Açık Atılır.
+
+                loginResultModel.CreatedTokenTime = createTime.GetTotalMilliSeconds();
+                loginResultModel.BeHalfOfPassword = cacheKey.Split(':').Length > 1 ? cacheKey.Split(':')[2] : "";
+                loginResultModel.BeHalfOfUserId = user.Id.ToString();
+
+                var response = new ServiceResponse<LoginResultModel>(null);
+                response.Entity = loginResultModel;
+                return response;
+            }
+            else
+            {
+                var loginResultModel = new LoginResultModel();
+                var response = new ServiceResponse<LoginResultModel>(null);
+                response.Entity = loginResultModel;
+                return response;
+            }
         }
         public IServiceResponse<bool> Delete(long id, int userId)
         {

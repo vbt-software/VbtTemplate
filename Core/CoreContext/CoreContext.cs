@@ -20,6 +20,7 @@ namespace Core.CoreContext
         public string MobileVersion => _vbtConfig.Value.MobileVersion;
         public string DefaultCultureName => _vbtConfig.Value.DefaultCultureName;
         public int TokenExpireTime => _vbtConfig.Value.TokenExpireTime;
+        public int TokenBeHalfOfExpireTime => _vbtConfig.Value.TokenBeHalfOfExpireTime;
         public int RefreshTokenExpireTime => _vbtConfig.Value.RefreshTokenExpireTime;
         public int MobileRefreshTokenExpireTime => _vbtConfig.Value.MobileRefreshTokenExpireTime;
         public bool Contains(string source, string destination)

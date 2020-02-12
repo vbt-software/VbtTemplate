@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="BeHalfofTokenException" xml:space="preserve">
+    <value>Başkasınn adına yapılan giriş geçerli değildir.</value>
+  </data>
   <data name="Forbidden" xml:space="preserve">
     <value>Bu sayfa için, geçerli bir yetkiniz yoktur.</value>
   </data>
@@ -125,6 +128,12 @@
   </data>
   <data name="NewVersion" xml:space="preserve">
     <value>Lütfen mağazadan uygulamanın yeni versiyonunu indiriniz.</value>
+  </data>
+  <data name="OverMobileUsageExeception" xml:space="preserve">
+    <value>En fazla 2 farklı mobil cihazdan giriş yapabilirsiniz.</value>
+  </data>
+  <data name="PasswordError" xml:space="preserve">
+    <value>Şifre işleminde bir problem yaşandı lütfen teknik destek alın.</value>
   </data>
   <data name="TokenException" xml:space="preserve">
     <value>Geçerli Bir Token Girilmemiştir</value>

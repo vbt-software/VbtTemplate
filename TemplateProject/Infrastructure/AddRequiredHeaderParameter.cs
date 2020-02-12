@@ -16,7 +16,7 @@ namespace TemplateProject.Infrastructure
             {
                 Name = "UserId",
                 In = ParameterLocation.Header,
-                Schema=new OpenApiSchema { Type="int"},
+                Schema = new OpenApiSchema { Type = "int" },
                 Required = false
             });
 
@@ -47,6 +47,30 @@ namespace TemplateProject.Infrastructure
             operation.Parameters.Add(new OpenApiParameter
             {
                 Name = "UnqDeviceId",
+                In = ParameterLocation.Header,
+                Schema = new OpenApiSchema { Type = "string" },
+                Required = false
+            });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "BeHalfOfToken",
+                In = ParameterLocation.Header,
+                Schema = new OpenApiSchema { Type = "string" },
+                Required = false
+            });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "BeHalfOfUserId",
+                In = ParameterLocation.Header,
+                Schema = new OpenApiSchema { Type = "int" },
+                Required = false
+            });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "BeHalfOfPassword",
                 In = ParameterLocation.Header,
                 Schema = new OpenApiSchema { Type = "string" },
                 Required = false

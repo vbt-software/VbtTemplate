@@ -19,6 +19,7 @@ namespace Core.Configuration
         public string MobileVersion { get; set; }
         public string EnvironmentName { get; set; }
         public int TokenExpireTime { get; set; }
+        public int TokenBeHalfOfExpireTime { get; set; }
         public int RefreshTokenExpireTime { get; set; }
         public int MobileRefreshTokenExpireTime { get; set; }        
 

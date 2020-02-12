@@ -50,12 +50,19 @@ namespace TemplateProject.Infrastructure
                 //Kontrol edilmesi gereken bir Action mı ? Mesela Login için bu işlem yapılmaz!
                 if (HasIgnoreAttribute(context)) return;
 
+                //BeHalfOfToken and BeHalfOfUserId //Birinin Adına mı Girmiş!
+                var beHalfOfUserId = context.HttpContext.Request.Headers["BeHalfOfUserId"].FirstOrDefault();
+                var beHalfOfToken = context.HttpContext.Request.Headers["BeHalfOfToken"].FirstOrDefault();
+                var beHalfOfPassword = context.HttpContext.Request.Headers["BeHalfOfPassword"].FirstOrDefault();
+
                 bool.TryParse(context.HttpContext.Request.Headers["IsMobile"].FirstOrDefault(), out var isMobile);
                 int.TryParse(context.HttpContext.Request.Headers["UserId"].FirstOrDefault(), out var userId);
                 //Mobile için
                 var unqDeviceId = context.HttpContext.Request.Headers["UnqDeviceId"].FirstOrDefault();
-                //Tüm platformlar için gerekli kontrollerin yapılabilmesi için UserID şarttır.
-                if (userId == 0)
+                //Tüm platformlar için gerekli kontrollerin yapılabilmesi için UserID şarttır.              
+
+                //if (userId == 0) // Başkası Adına da Girmiş Olabilir (BeHalfOf)
+                if (userId == 0 && int.Parse(beHalfOfUserId) == 0)
                 {
                     context.Result = new UnauthorizedResult();
                     return;
@@ -64,6 +71,13 @@ namespace TemplateProject.Infrastructure
                 _workContext.CurrentUserId = userId;
                 _workContext.IsMobile = isMobile;
                 //--------------------------------------
+
+                //BeHalfOfUserId Global
+                if (beHalfOfUserId != null && beHalfOfUserId != "" && int.Parse(beHalfOfUserId) > 0)
+                {
+                    _workContext.CurrentBeHalfOfUserId = int.Parse(beHalfOfUserId);
+                }
+
                 //Set UserIsAdmin
                 UserModel user = _userService.GetById(userId).Entity;
                 if (user != null)
@@ -72,160 +86,185 @@ namespace TemplateProject.Infrastructure
                 }
                 //---------------------
 
-                string authHeader = context.HttpContext.Request.Headers["Authorization"];
-                //Not: Bu durum sadece Web ortamı için geçerlidir. Mobilden her zaman Token gelmektedir.
-                if (authHeader != null && authHeader.StartsWith("Bearer"))
+                //BeHalfOfToken Check! Birisinin Adına Girmiş İse Onun Kuralları Geçerli Olur.
+                if (beHalfOfToken != null && beHalfOfToken != "")
                 {
-                    //Extract credentials
-                    var token = authHeader.Substring("Bearer ".Length).TrimStart();
-                    var decryptToken = _encryptionService.DecryptText(token);
-                    //Not: Bu durum sadece Web ortamı için geçerlidir. Mobilden her zaman Token gelmektedir. Hiçbir zaman timeout'a uğramaz. Tek fark 45 dakikadan büyük ise RefreshToken'da gönderilir. 
-                    if (string.IsNullOrEmpty(decryptToken))// token yoksa UnauthorizedResult dönüyoruz. Bu sadece Web ortamı için geçerlidir. Mobilede her zaman Token dönülür. Gelmemiş ise ona da UnauthorizedResult dönülür.
+                    var decryptBeHalfOfToken = _encryptionService.DecryptText(beHalfOfToken);
+                    var decryptBeHalfOfPassword = _encryptionService.DecryptFromClientData(beHalfOfPassword);
+                    var cacheRedisbeHalfOfToken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKeyForBeHalfOf(int.Parse(beHalfOfUserId), decryptBeHalfOfPassword));
+                    //Başkasının yerine girdi ve bilgiler doğru değil ise devam edilmez. Geriya hata dönülür.
+                    if (string.IsNullOrEmpty(cacheRedisbeHalfOfToken) || (!string.IsNullOrEmpty(cacheRedisbeHalfOfToken) && cacheRedisbeHalfOfToken.Trim() != decryptBeHalfOfToken.Trim()))
                     {
-                        context.Result = new UnauthorizedResult();
-                        return;
-                    }
-
-                    //İlgili UserID'ye ait Token Redis'den alınır.
-                    var cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
-
-                    if (string.IsNullOrEmpty(cacheRedistoken) && isMobile) // Redis'de Token Key yok ise , bu durum SADECE MOBILE'DE BAKILMALIDIR.
-                    {
-                        //Refresh Token kontrolü yapılır.
-                        CreateTokensByCheckRefreshToken(context, true); //true'nun amacı  context.Result = new UnauthorizedResult() dönüşünün yapılmasının istenmesidir.
-                        #region CreateTokensByCheckRefreshToken Methodu Altına Taşındı.
-                        //if (context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault() != null) // client refresh token göndermiş.
-                        //{
-                        //    var clientRefreshToken = context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault();
-                        //    var redisRefreshToken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, true, unqDeviceId));
-
-                        //    if (string.IsNullOrEmpty(redisRefreshToken))//rediste refresh token yok 
-                        //    {
-                        //        context.Result = new UnauthorizedResult();
-                        //        return;
-                        //    }
-                        //    var decClientRefreshToken = _encryptionService.DecryptText(clientRefreshToken);
-                        //    if (decClientRefreshToken == redisRefreshToken)//Refresh Token doğru. Yeni token ve refresh token üretip dönelim.
-                        //    {
-                        //        UserModel user = _userService.GetById(userId).Entity;
-                        //        var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
-                        //        //Oluşturulsn Token Redis'e atılır.
-                        //        var createTime = DateTime.Now;
-
-                        //        //Token Oluşturulur. Mobilde ve Web'de 1 saattir. appsettings.json'a bakınız.
-                        //        DateTime tokenExpireTime = createTime.AddMinutes(_coreContext.TokenExpireTime);
-                        //        _redisCacheService.Set(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId), decToken, tokenExpireTime);
-
-                        //        //Geri dönülecek Encrypt Token ve Yaratılma zamanı Client'ın Header'ına atanır
-                        //        context.HttpContext.Items["token"] = encToken;
-                        //        context.HttpContext.Items["createdTokenTime"] = createTime.GetTotalMilliSeconds();
-
-                        //        //RefreshToken Oluşturulur.
-                        //        //Refresh Token Mobilde 1 Yıl, Web'de 1.5 saattir. appsettings.json'a bakınız.
-                        //        var refreshToken = GenerateRefreshToken(user, context, unqDeviceId, isMobile);
-                        //        if (!string.IsNullOrWhiteSpace(refreshToken))
-                        //        {
-                        //            //Oluşturulan RefreshToken Client'a dönülür.
-                        //            context.HttpContext.Items["refreshToken"] = refreshToken;
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-                        //        context.Result = new UnauthorizedResult();
-                        //        return;
-                        //    }
-                        //}
-                        //else
-                        //{
-                        //    context.Result = new UnauthorizedResult();
-                        //    return;
-                        //}
-                        #endregion
-                    }
-                    else if ((string.IsNullOrEmpty(cacheRedistoken)) || (!string.IsNullOrEmpty(cacheRedistoken) && cacheRedistoken.Trim() != decryptToken.Trim())) //Redis'de Token Yok Ya da Redis'de Token Var ama tokenlar eşit değil , geçerli bir oturum isteği değil. 
-                    {
-                        context.Result = new UnauthorizedResult();
-                        return;
-                    }
-
-                    //Redis'in süresine bakılacak
-                    var tokenSession = decryptToken.Split('ß')[2];
-                    var sessionCreateTime = DateTime.Parse(tokenSession);
-                    var remainingTime = DateTime.Now - sessionCreateTime;
-
-                    //Tokenlar eşit , 45 ile 60'ıncı dakikalar arasındaysa token ve refresh token'ı yenileyip dönelim. Önemli Not: Redis Cache'de Token var ise!
-                    //if (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime - 15)
-                    //if (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime - 15 && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime)
-                    if ((string.IsNullOrEmpty(cacheRedistoken) == false) && (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime - 15 && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime))
-                    {
-                        //------------CheckTime On Redis              
-
-                        //İlgili UserID'ye ait Token Redis'den alınır.
-                        cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
-                        var redisToken = cacheRedistoken.Split('ß')[2];
-                        var redisTokenCreateTime = DateTime.Parse(redisToken);
-                        var redisTokenTime = DateTime.Now - redisTokenCreateTime;
-
-                        //------------End CheckTime on Redis
-                        //Check TimeOut 2. Time for Backend Redis!
-                        if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+                        context.Result = new ObjectResult(context.ModelState)
                         {
-                            lock (lockObject)
-                            {
-                                //Double Check Lock With Redis Key!
-                                cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
-                                redisToken = cacheRedistoken.Split('ß')[2];
-                                redisTokenCreateTime = DateTime.Parse(redisToken);
-                                redisTokenTime = DateTime.Now - redisTokenCreateTime;
-                                if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
-                                {
-                                    CreateTokensByCheckRefreshToken(context);
-                                }
-                            }
-                        }
-                        #region CreateTokensByCheckRefreshToken Methodu Altına Taşındı.
-                        //if (context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault() != null) // client refresh token göndermiş.
-                        //{
-                        //    var clientRefreshToken = context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault();
-                        //    var redisRefreshToken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, true, unqDeviceId));
-
-                        //    if (string.IsNullOrEmpty(redisRefreshToken))//rediste refresh token yok 
-                        //    {
-                        //        context.Result = new UnauthorizedResult();
-                        //        return;
-                        //    }
-                        //    var decClientRefreshToken = _encryptionService.DecryptText(clientRefreshToken);
-                        //    if (decClientRefreshToken == redisRefreshToken)//Refresh Token doğru. Yeni token ve refresh token üretip dönelim.
-                        //    {
-                        //        UserModel user = _userService.GetById(userId).Entity;
-                        //        var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
-                        //        //Oluşturulan Token Redis'e atılır.
-
-                        //        var createTime = DateTime.Now;
-                        //        DateTime tokenExpireTime = createTime.AddMinutes(_coreContext.TokenExpireTime);
-                        //        _redisCacheService.Set(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId), decToken, tokenExpireTime);
-
-                        //        //Geri dönülecek Encrypt Token ve Yaratılma zamanı Client'ın Header'ına atanır
-                        //        context.HttpContext.Items["token"] = encToken;
-                        //        context.HttpContext.Items["createdTokenTime"] = createTime.GetTotalMilliSeconds();
-
-                        //        //RefreshToken Oluşturulur.
-                        //        //Refresh Token Mobilde 1 Yıl Web'de 1.5 saattir. appsettings.json'a bakınız.
-                        //        var refreshToken = GenerateRefreshToken(user, context, unqDeviceId, isMobile);
-                        //        if (!string.IsNullOrWhiteSpace(refreshToken))
-                        //        {
-                        //            //Oluşturulan RefreshToken Client'a dönülür.
-                        //            context.HttpContext.Items["refreshToken"] = refreshToken;
-                        //        }
-                        //    }
-                        //}
-                        #endregion
+                            Value = _localizer["BeHalfofTokenException"],
+                            StatusCode = 431
+                        };
+                        return;
                     }
                 }
                 else
                 {
-                    context.Result = new UnauthorizedResult();
-                    return;
+                    //BeHalfOf Değil ise Token Kontrolü yapılır.
+                    string authHeader = context.HttpContext.Request.Headers["Authorization"];
+                    //Not: Bu durum sadece Web ortamı için geçerlidir. Mobilden her zaman Token gelmektedir.
+                    if (authHeader != null && authHeader.StartsWith("Bearer"))
+                    {
+                        //Extract credentials
+                        var token = authHeader.Substring("Bearer ".Length).TrimStart();
+                        var decryptToken = _encryptionService.DecryptText(token);
+                        //Not: Bu durum sadece Web ortamı için geçerlidir. Mobilden her zaman Token gelmektedir. Hiçbir zaman timeout'a uğramaz. Tek fark 45 dakikadan büyük ise RefreshToken'da gönderilir. 
+                        if (string.IsNullOrEmpty(decryptToken))// token yoksa UnauthorizedResult dönüyoruz. Bu sadece Web ortamı için geçerlidir. Mobilede her zaman Token dönülür. Gelmemiş ise ona da UnauthorizedResult dönülür.
+                        {
+                            context.Result = new UnauthorizedResult();
+                            return;
+                        }
+
+                        //İlgili UserID'ye ait Token Redis'den alınır.
+                        var cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+
+                        if (string.IsNullOrEmpty(cacheRedistoken) && isMobile) // Redis'de Token Key yok ise , bu durum SADECE MOBILE'DE BAKILMALIDIR.
+                        {
+                            //Refresh Token kontrolü yapılır.
+                            CreateTokensByCheckRefreshToken(context, true); //true'nun amacı  context.Result = new UnauthorizedResult() dönüşünün yapılmasının istenmesidir.
+                            #region CreateTokensByCheckRefreshToken Methodu Altına Taşındı.
+                            //if (context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault() != null) // client refresh token göndermiş.
+                            //{
+                            //    var clientRefreshToken = context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault();
+                            //    var redisRefreshToken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, true, unqDeviceId));
+
+                            //    if (string.IsNullOrEmpty(redisRefreshToken))//rediste refresh token yok 
+                            //    {
+                            //        context.Result = new UnauthorizedResult();
+                            //        return;
+                            //    }
+                            //    var decClientRefreshToken = _encryptionService.DecryptText(clientRefreshToken);
+                            //    if (decClientRefreshToken == redisRefreshToken)//Refresh Token doğru. Yeni token ve refresh token üretip dönelim.
+                            //    {
+                            //        UserModel user = _userService.GetById(userId).Entity;
+                            //        var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
+                            //        //Oluşturulsn Token Redis'e atılır.
+                            //        var createTime = DateTime.Now;
+
+                            //        //Token Oluşturulur. Mobilde ve Web'de 1 saattir. appsettings.json'a bakınız.
+                            //        DateTime tokenExpireTime = createTime.AddMinutes(_coreContext.TokenExpireTime);
+                            //        _redisCacheService.Set(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId), decToken, tokenExpireTime);
+
+                            //        //Geri dönülecek Encrypt Token ve Yaratılma zamanı Client'ın Header'ına atanır
+                            //        context.HttpContext.Items["token"] = encToken;
+                            //        context.HttpContext.Items["createdTokenTime"] = createTime.GetTotalMilliSeconds();
+
+                            //        //RefreshToken Oluşturulur.
+                            //        //Refresh Token Mobilde 1 Yıl, Web'de 1.5 saattir. appsettings.json'a bakınız.
+                            //        var refreshToken = GenerateRefreshToken(user, context, unqDeviceId, isMobile);
+                            //        if (!string.IsNullOrWhiteSpace(refreshToken))
+                            //        {
+                            //            //Oluşturulan RefreshToken Client'a dönülür.
+                            //            context.HttpContext.Items["refreshToken"] = refreshToken;
+                            //        }
+                            //    }
+                            //    else
+                            //    {
+                            //        context.Result = new UnauthorizedResult();
+                            //        return;
+                            //    }
+                            //}
+                            //else
+                            //{
+                            //    context.Result = new UnauthorizedResult();
+                            //    return;
+                            //}
+                            #endregion
+                        }
+                        else if ((string.IsNullOrEmpty(cacheRedistoken)) || (!string.IsNullOrEmpty(cacheRedistoken) && cacheRedistoken.Trim() != decryptToken.Trim())) //Redis'de Token Yok Ya da Redis'de Token Var ama tokenlar eşit değil , geçerli bir oturum isteği değil. 
+                        {
+                            context.Result = new UnauthorizedResult();
+                            return;
+                        }
+
+                        //Redis'in süresine bakılacak
+                        var tokenSession = decryptToken.Split('ß')[2];
+                        var sessionCreateTime = DateTime.Parse(tokenSession);
+                        var remainingTime = DateTime.Now - sessionCreateTime;
+
+                        //Tokenlar eşit , 45 ile 60'ıncı dakikalar arasındaysa token ve refresh token'ı yenileyip dönelim. Önemli Not: Redis Cache'de Token var ise!
+                        //if (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime - 15)
+                        //if (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime - 15 && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime)
+                        //1. KONTROL
+                        if ((string.IsNullOrEmpty(cacheRedistoken) == false) && (remainingTime.TotalMinutes >= _coreContext.TokenExpireTime - 15 && remainingTime.TotalMinutes <= _coreContext.TokenExpireTime))
+                        {
+                            //------------CheckTime On Redis              
+
+                            //İlgili UserID'ye ait Token Redis'den alınır.
+//                            cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+//                            var redisToken = cacheRedistoken.Split('ß')[2];
+//                            var redisTokenCreateTime = DateTime.Parse(redisToken);
+//                            var redisTokenTime = DateTime.Now - redisTokenCreateTime;
+
+                            //Bu 3. Kontrol oluyordu. Kaldırıldı.
+                            //------------End CheckTime on Redis
+                            //Check TimeOut 2. Time for Backend Redis!
+//                            if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+//                            {
+                                lock (lockObject)
+                                {
+                                    //Double Check Lock With Redis Key!
+                                    //İlgili UserID'ye ait Token Redis'den alınır.
+                                    cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+                                    var redisToken = cacheRedistoken.Split('ß')[2];
+                                    var redisTokenCreateTime = DateTime.Parse(redisToken);
+                                    var redisTokenTime = DateTime.Now - redisTokenCreateTime;
+                                //2.KONTROL Check Timeout 2. Time for Backend Redis!
+                                    if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+                                    {
+                                        CreateTokensByCheckRefreshToken(context);
+                                    }
+                                }
+//                            }
+                            #region CreateTokensByCheckRefreshToken Methodu Altına Taşındı.
+                            //if (context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault() != null) // client refresh token göndermiş.
+                            //{
+                            //    var clientRefreshToken = context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault();
+                            //    var redisRefreshToken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, true, unqDeviceId));
+
+                            //    if (string.IsNullOrEmpty(redisRefreshToken))//rediste refresh token yok 
+                            //    {
+                            //        context.Result = new UnauthorizedResult();
+                            //        return;
+                            //    }
+                            //    var decClientRefreshToken = _encryptionService.DecryptText(clientRefreshToken);
+                            //    if (decClientRefreshToken == redisRefreshToken)//Refresh Token doğru. Yeni token ve refresh token üretip dönelim.
+                            //    {
+                            //        UserModel user = _userService.GetById(userId).Entity;
+                            //        var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
+                            //        //Oluşturulan Token Redis'e atılır.
+
+                            //        var createTime = DateTime.Now;
+                            //        DateTime tokenExpireTime = createTime.AddMinutes(_coreContext.TokenExpireTime);
+                            //        _redisCacheService.Set(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId), decToken, tokenExpireTime);
+
+                            //        //Geri dönülecek Encrypt Token ve Yaratılma zamanı Client'ın Header'ına atanır
+                            //        context.HttpContext.Items["token"] = encToken;
+                            //        context.HttpContext.Items["createdTokenTime"] = createTime.GetTotalMilliSeconds();
+
+                            //        //RefreshToken Oluşturulur.
+                            //        //Refresh Token Mobilde 1 Yıl Web'de 1.5 saattir. appsettings.json'a bakınız.
+                            //        var refreshToken = GenerateRefreshToken(user, context, unqDeviceId, isMobile);
+                            //        if (!string.IsNullOrWhiteSpace(refreshToken))
+                            //        {
+                            //            //Oluşturulan RefreshToken Client'a dönülür.
+                            //            context.HttpContext.Items["refreshToken"] = refreshToken;
+                            //        }
+                            //    }
+                            //}
+                            #endregion
+                        }
+                    }
+                    else
+                    {
+                        context.Result = new UnauthorizedResult();
+                        return;
+                    }
                 }
 
                 //Role Yetkisine bakılır.
@@ -237,7 +276,10 @@ namespace TemplateProject.Infrastructure
 
                         int roleGroupID = (int)arguments[0].Value;
                         Int64 roleID = (Int64)arguments[1].Value;
-                        RoleModel role = _roleService.GetRoleById(userId, roleGroupID, roleID).Entity;
+                        //BeHalfOfUserID değeri var ise o verilir. Yok ise client'ın UserID değeri alınır.
+                        int userIDprm = _workContext.CurrentBeHalfOfUserId != 0 ? _workContext.CurrentBeHalfOfUserId : userId;
+                        RoleModel role = _roleService.GetRoleById(userIDprm, roleGroupID, roleID).Entity;
+                        //RoleModel role = _roleService.GetRoleById(userId, roleGroupID, roleID).Entity;
                         if (role.Id == 0)
                         {
                             //Forbidden 403 Result. Yetkiniz Yoktur..
@@ -286,6 +328,7 @@ namespace TemplateProject.Infrastructure
                         )
                         {
                             var entity = context.ActionArguments[param.Name];
+                            //Burada BeHalhOfUserID'de kullanılabilir.
                             context.HttpContext.Items[userId + "_" + controller + "_" + action] = entity;
                         }
                     }
