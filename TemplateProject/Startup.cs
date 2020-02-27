@@ -3,6 +3,7 @@ using Core;
 using Core.Caching;
 using Core.Configuration;
 using Core.CoreContext;
+using Core.Security;
 using DB.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +19,6 @@ using Services.Customers;
 using Services.Employees;
 using Services.Login;
 using Services.Roles;
-using Services.SecurityService;
 using Services.Users;
 using System;
 using System.Collections.Generic;
@@ -48,6 +48,7 @@ namespace TemplateProject
             services.AddTransient<ILoginService, LoginService>();
             services.AddTransient<IRoleService, RoleService>();
             services.AddSingleton<ICoreContext, CoreContext>();
+            services.AddScoped<LoginLogFilter>();
 
             services.AddScoped<IWorkContext, WorkContext>();
             services.AddScoped<LoginFilter>();
@@ -62,7 +63,7 @@ namespace TemplateProject
             services.Configure<VbtConfig>(Configuration.GetSection("VbtConfig"));
 
             services.AddTransient<IRedisCacheService, RedisCacheService>();
-            services.AddTransient<IEncryptionService, EncryptionService>();
+            services.AddTransient<IEncryption, Encryption>();
 
             services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()
                .AllowAnyMethod()

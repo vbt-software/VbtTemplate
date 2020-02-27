@@ -5,12 +5,12 @@ using Core.CustomException;
 using Core.Extensions;
 using Core.Models.Roles;
 using Core.Models.Users;
+using Core.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Localization;
 using Services.Roles;
-using Services.SecurityService;
 using Services.Users;
 using System;
 using System.Linq;
@@ -21,7 +21,7 @@ namespace TemplateProject.Infrastructure
     public class LoginFilter : IActionFilter
     {
         private readonly IRedisCacheService _redisCacheService;
-        private readonly IEncryptionService _encryptionService;
+        private readonly IEncryption _encryption;
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
         private readonly ICoreContext _coreContext;
@@ -31,11 +31,11 @@ namespace TemplateProject.Infrastructure
 
         private static readonly object lockObject = new object();
 
-        public LoginFilter(IRedisCacheService redisCacheService, IEncryptionService encryptionService,
+        public LoginFilter(IRedisCacheService redisCacheService, IEncryption encryption,
             IUserService userService, ICoreContext coreContext, IWorkContext workContext, IRoleService roleService, IStringLocalizer<VbtController> localizer)
         {
             _redisCacheService = redisCacheService;
-            _encryptionService = encryptionService;
+            _encryption = encryption;
             _coreContext = coreContext;
             _userService = userService;
             _workContext = workContext;
@@ -54,6 +54,16 @@ namespace TemplateProject.Infrastructure
                 var beHalfOfUserId = context.HttpContext.Request.Headers["BeHalfOfUserId"].FirstOrDefault();
                 var beHalfOfToken = context.HttpContext.Request.Headers["BeHalfOfToken"].FirstOrDefault();
                 var beHalfOfPassword = context.HttpContext.Request.Headers["BeHalfOfPassword"].FirstOrDefault();
+
+                //beHalfOfUserId parametersi ZORUNLU olmadığı için, null ise "beHalfOfPassword" değerinden alınır.
+                if (beHalfOfPassword != null && (beHalfOfUserId == null || int.Parse(beHalfOfUserId) == 0) && !string.IsNullOrEmpty(beHalfOfPassword))
+                {
+                    var decryptBeHalfOfPassword = _encryption.DecryptFromClientData(beHalfOfPassword);
+                    if (decryptBeHalfOfPassword.Split('@').Length > 1)
+                    {
+                        beHalfOfUserId = decryptBeHalfOfPassword.Split('@')[1];
+                    }
+                }
 
                 bool.TryParse(context.HttpContext.Request.Headers["IsMobile"].FirstOrDefault(), out var isMobile);
                 int.TryParse(context.HttpContext.Request.Headers["UserId"].FirstOrDefault(), out var userId);
@@ -89,8 +99,8 @@ namespace TemplateProject.Infrastructure
                 //BeHalfOfToken Check! Birisinin Adına Girmiş İse Onun Kuralları Geçerli Olur.
                 if (beHalfOfToken != null && beHalfOfToken != "")
                 {
-                    var decryptBeHalfOfToken = _encryptionService.DecryptText(beHalfOfToken);
-                    var decryptBeHalfOfPassword = _encryptionService.DecryptFromClientData(beHalfOfPassword);
+                    var decryptBeHalfOfToken = _encryption.DecryptText(beHalfOfToken);
+                    var decryptBeHalfOfPassword = _encryption.DecryptFromClientData(beHalfOfPassword);
                     var cacheRedisbeHalfOfToken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKeyForBeHalfOf(int.Parse(beHalfOfUserId), decryptBeHalfOfPassword));
                     //Başkasının yerine girdi ve bilgiler doğru değil ise devam edilmez. Geriya hata dönülür.
                     if (string.IsNullOrEmpty(cacheRedisbeHalfOfToken) || (!string.IsNullOrEmpty(cacheRedisbeHalfOfToken) && cacheRedisbeHalfOfToken.Trim() != decryptBeHalfOfToken.Trim()))
@@ -112,7 +122,7 @@ namespace TemplateProject.Infrastructure
                     {
                         //Extract credentials
                         var token = authHeader.Substring("Bearer ".Length).TrimStart();
-                        var decryptToken = _encryptionService.DecryptText(token);
+                        var decryptToken = _encryption.DecryptText(token);
                         //Not: Bu durum sadece Web ortamı için geçerlidir. Mobilden her zaman Token gelmektedir. Hiçbir zaman timeout'a uğramaz. Tek fark 45 dakikadan büyük ise RefreshToken'da gönderilir. 
                         if (string.IsNullOrEmpty(decryptToken))// token yoksa UnauthorizedResult dönüyoruz. Bu sadece Web ortamı için geçerlidir. Mobilede her zaman Token dönülür. Gelmemiş ise ona da UnauthorizedResult dönülür.
                         {
@@ -196,31 +206,31 @@ namespace TemplateProject.Infrastructure
                             //------------CheckTime On Redis              
 
                             //İlgili UserID'ye ait Token Redis'den alınır.
-//                            cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
-//                            var redisToken = cacheRedistoken.Split('ß')[2];
-//                            var redisTokenCreateTime = DateTime.Parse(redisToken);
-//                            var redisTokenTime = DateTime.Now - redisTokenCreateTime;
+                            //                            cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+                            //                            var redisToken = cacheRedistoken.Split('ß')[2];
+                            //                            var redisTokenCreateTime = DateTime.Parse(redisToken);
+                            //                            var redisTokenTime = DateTime.Now - redisTokenCreateTime;
 
                             //Bu 3. Kontrol oluyordu. Kaldırıldı.
                             //------------End CheckTime on Redis
                             //Check TimeOut 2. Time for Backend Redis!
-//                            if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
-//                            {
-                                lock (lockObject)
-                                {
-                                    //Double Check Lock With Redis Key!
-                                    //İlgili UserID'ye ait Token Redis'den alınır.
-                                    cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
-                                    var redisToken = cacheRedistoken.Split('ß')[2];
-                                    var redisTokenCreateTime = DateTime.Parse(redisToken);
-                                    var redisTokenTime = DateTime.Now - redisTokenCreateTime;
+                            //                            if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+                            //                            {
+                            lock (lockObject)
+                            {
+                                //Double Check Lock With Redis Key!
+                                //İlgili UserID'ye ait Token Redis'den alınır.
+                                cacheRedistoken = _redisCacheService.Get<string>(_redisCacheService.GetTokenKey(userId, isMobile, false, unqDeviceId));
+                                var redisToken = cacheRedistoken.Split('ß')[2];
+                                var redisTokenCreateTime = DateTime.Parse(redisToken);
+                                var redisTokenTime = DateTime.Now - redisTokenCreateTime;
                                 //2.KONTROL Check Timeout 2. Time for Backend Redis!
-                                    if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
-                                    {
-                                        CreateTokensByCheckRefreshToken(context);
-                                    }
+                                if (redisTokenTime.TotalMinutes >= _coreContext.TokenExpireTime - 15)
+                                {
+                                    CreateTokensByCheckRefreshToken(context);
                                 }
-//                            }
+                            }
+                            //                            }
                             #region CreateTokensByCheckRefreshToken Methodu Altına Taşındı.
                             //if (context.HttpContext.Request.Headers["RefreshToken"].FirstOrDefault() != null) // client refresh token göndermiş.
                             //{
@@ -369,11 +379,11 @@ namespace TemplateProject.Infrastructure
                     context.Result = new UnauthorizedResult();
                     return;
                 }
-                var decClientRefreshToken = _encryptionService.DecryptText(clientRefreshToken);
+                var decClientRefreshToken = _encryption.DecryptText(clientRefreshToken);
                 if (decClientRefreshToken == redisRefreshToken)//Refresh Token doğru. Yeni token ve refresh token üretip dönelim.
                 {
                     UserModel user = _userService.GetById(userId).Entity;
-                    var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
+                    var (encToken, decToken) = _encryption.GenerateToken(user.Email);
                     //Oluşturulan Token Redis'e atılır.
 
                     var createTime = DateTime.Now;
@@ -417,6 +427,7 @@ namespace TemplateProject.Infrastructure
                 {
                     var entity = context.HttpContext.Items[userId + "_" + controller + "_" + action];
                     string testLog = ((Core.Models.EmployeeTerritory)entity).FirstName + "-" + ((Core.Models.EmployeeTerritory)entity).Title;
+                    string model = Newtonsoft.Json.JsonConvert.SerializeObject(entity);
                     return;
                 }
             }
@@ -449,7 +460,7 @@ namespace TemplateProject.Infrastructure
             {
                 tokenExpireTime = createTime.AddMinutes(_coreContext.MobileRefreshTokenExpireTime);
             }
-            var (encToken, decToken) = _encryptionService.GenerateToken(user.Email);
+            var (encToken, decToken) = _encryption.GenerateToken(user.Email);
             _redisCacheService.Set(_redisCacheService.GetTokenKey(user.Id, isMobile, true, unqDeviceId), decToken, tokenExpireTime);
             return encToken;
         }

@@ -57,7 +57,8 @@ namespace TemplateProject.Infrastructure
                 Name = "BeHalfOfToken",
                 In = ParameterLocation.Header,
                 Schema = new OpenApiSchema { Type = "string" },
-                Required = false
+                Required = false,
+                Description = "Birinin Yerine Giriliyor ise Zorunludur."
             });
 
             operation.Parameters.Add(new OpenApiParameter
@@ -65,7 +66,8 @@ namespace TemplateProject.Infrastructure
                 Name = "BeHalfOfUserId",
                 In = ParameterLocation.Header,
                 Schema = new OpenApiSchema { Type = "int" },
-                Required = false
+                Required = false,
+                Description="Zorunlu Değildir"
             });
 
             operation.Parameters.Add(new OpenApiParameter
@@ -73,7 +75,8 @@ namespace TemplateProject.Infrastructure
                 Name = "BeHalfOfPassword",
                 In = ParameterLocation.Header,
                 Schema = new OpenApiSchema { Type = "string" },
-                Required = false
+                Required = false,
+                Description = "Birinin Yerine Giriliyor ise Zorunludur. Encrypted olarak giriniz!"
             });
         }
     }

@@ -15,7 +15,8 @@ namespace Core
         {
             GetCustomer = 1,
             GetCustomerById = 2,
-            GetCustomerList=4
+            GetCustomerList=4,
+            InsertUser=8
         }
         public enum EmployeeRoles
         {

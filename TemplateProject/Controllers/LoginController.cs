@@ -17,7 +17,6 @@ using Services.Employees;
 using Core.Caching;
 using Core.Models.Users;
 using Core.CoreContext;
-using Services.SecurityService;
 using Services.Users;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
@@ -29,6 +28,7 @@ using TemplateProject.Infrastructure;
 
 namespace TemplateProject.Controllers
 {
+    [ServiceFilter(typeof(LoginLogFilter))]
     [Produces("application/json")]
     [Route("api/login")]
     public class LoginController : ControllerBase
@@ -59,7 +59,7 @@ namespace TemplateProject.Controllers
         [Route("login")]
         [HttpPost]
         //Amaç Swagger'da açıklama olarak girilir.
-        [SwaggerOperation(Summary = "Test User Password vbt123456 ==> dmJ0MTIzNDU2", Description = "<b>Test User</b> </br><b>Password:</b> dmJ0MTIzNDU2 <br> <b>UserName:</b> bkasmer </br> <b>IsMobile:</b> false </br> <b>UnqDeviceId:</b> \"\"  <br> <b>(Mobile ise)MobileVersion : </b> 1.0.0")]
+        [SwaggerOperation(Summary = "Test User Password (Encrypted girilir) vbt123456 ==> dmJ0MTIzNDU2", Description = "<b>Test User</b> </br><b>Password:</b> dmJ0MTIzNDU2 <br> <b>UserName:</b> bkasmer </br> <b>IsMobile:</b> false </br> <b>UnqDeviceId:</b> \"\"  <br> <b>(Mobile ise)MobileVersion : </b> 1.0.0")]
         public IActionResult Login([FromBody] LoginModel model)
         {
             var isMobile = model.IsMobile;

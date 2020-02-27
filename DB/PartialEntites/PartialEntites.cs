@@ -9,6 +9,8 @@ namespace DB.Entities
     class PartialEntites
     {
     }
+    [MetadataType(typeof(UserMetaData))]
+    public partial class Users : BaseEntity, ISoftDeletable { }
     public partial class Categories : BaseEntity, ISoftDeletable { }
     public partial class Customers : BaseEntity, ISoftDeletable { }
 
@@ -22,7 +24,6 @@ namespace DB.Entities
     public partial class Products : BaseEntity { }
     public partial class Orders : BaseEntity { }
     public partial class Products : BaseEntity { }
-    public partial class Users : BaseEntity, ISoftDeletable { }
     public partial class Roles : BaseEntity { }
     public partial class RoleGroups : BaseEntity { }
     public partial class UserRoles : BaseEntity { }
@@ -69,4 +70,11 @@ namespace DB.Entities
         [SetCurrentDate]
         public DateTime? HireDate { get; set; }
     }
+
+    public class UserMetaData
+    {
+        [CryptoData]
+        public string Gsm { get; set; }
+    }
+
 }

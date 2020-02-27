@@ -20,6 +20,7 @@ using static Core.Enums;
 using Core.Models.Roles;
 using Services.Roles;
 using Services.Users;
+using Core.Models.Users;
 
 namespace TemplateProject.Controllers
 {
@@ -53,7 +54,7 @@ namespace TemplateProject.Controllers
         [Infrastructure.IgnoreAttribute] //LoginFilter'a takılmaz.
         [HttpGet]
         public ServiceResponse<CustomerListModel> GetCustomer()
-        {          
+        {
             var response = new ServiceResponse<CustomerListModel>(HttpContext);
             response.List = _customerService.SearchCustomer("", 0, 10).List.ToList();
             response.IsSuccessful = true;
@@ -124,5 +125,17 @@ namespace TemplateProject.Controllers
             response.Count = response.List.Count;
             return response;
         }
+
+        [Infrastructure.RoleAttribute((int)RoleGroup.Customer, (Int64)CustomerRoles.InsertUser)]
+        [Route("InsertUser")]
+        [HttpPost]
+        public ServiceResponse<UserModel> InsertUser([FromBody] UserModel model)
+        {
+            var response = new ServiceResponse<UserModel>(HttpContext);
+            response.Entity = _userService.Insert(model, _workContext.CurrentUserId).Entity;
+            response.IsSuccessful = true;
+            return response;
+        }
+
     }
 }

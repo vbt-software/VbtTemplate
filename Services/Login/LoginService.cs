@@ -3,24 +3,24 @@ using Core.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Services.SecurityService;
 using Repository;
 using System.Linq;
 using Services.Users;
 using Core.Caching;
 using Core.CoreContext;
 using Core.Extensions;
+using Core.Security;
 
 namespace Services.Login
 {
     public class LoginService : ILoginService
     {
-        private readonly IEncryptionService _encryptionService;
+        private readonly IEncryption _encryptionService;
         private readonly IRepository<DB.Entities.Users> _userRepository;
         private readonly IUserService _userService;
         private readonly IRedisCacheService _redisCacheService;
         private readonly ICoreContext _coreContext;
-        public LoginService(IEncryptionService encryptionService, IRepository<DB.Entities.Users> userRepository, IUserService userService, IRedisCacheService redisCacheService, ICoreContext coreContext)
+        public LoginService(IEncryption encryptionService, IRepository<DB.Entities.Users> userRepository, IUserService userService, IRedisCacheService redisCacheService, ICoreContext coreContext)
         {
             _encryptionService = encryptionService;
             _userRepository = userRepository;

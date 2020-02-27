@@ -1,4 +1,5 @@
 ﻿using Core;
+using Core.Security;
 using DB;
 using DB.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +15,13 @@ namespace Repository
     {
         private readonly VbtContext _context;
         private DbSet<T> _entities;
+        private readonly IEncryption _encryption;
 
-        public GeneralRepository(VbtContext context)
+        public GeneralRepository(VbtContext context, IEncryption encryption)
         {
             _context = context;
             _entities = context.Set<T>();
+            _encryption = encryption;
         }
 
         public virtual T GetById(object id)
@@ -35,7 +38,25 @@ namespace Repository
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
             //Set Default UsedTime Parameter ==> UsedTime BaseEntity Property.
-            _context.Entry(entity).Property("UsedTime").CurrentValue = DateTime.Now;
+
+            //Entity'ye ait MetaData varsa bulunur
+            System.ComponentModel.DataAnnotations.MetadataTypeAttribute[] metadataTypes = entity.GetType().GetCustomAttributes(true).OfType<System.ComponentModel.DataAnnotations.MetadataTypeAttribute>().ToArray();
+            foreach (System.ComponentModel.DataAnnotations.MetadataTypeAttribute metadata in metadataTypes)
+            {
+                System.Reflection.PropertyInfo[] properties = metadata.MetadataClassType.GetProperties();
+                //Metadata atanmış entity'nin tüm propertyleri tek tek alınır.
+                foreach (System.Reflection.PropertyInfo pi in properties)
+                {
+                    //Eğer ilgili property ait CryptoData flag'i var ise ilgili deger encrypt edilir. 
+                    if (Attribute.IsDefined(pi, typeof(DB.PartialEntites.CryptoData)))
+                    {
+                        _context.Entry(entity).Property(pi.Name).CurrentValue = _encryption.EncryptText(_context.Entry(entity).Property(pi.Name).CurrentValue.ToString());
+                    }
+                }
+            }
+
+            //_context.Entry(entity).Property("UsedTime").CurrentValue = DateTime.Now; //UsedTime Entity'de görülmez [NotMapped] olduğu için.
+            entity.UsedTime = DateTime.Now;//02.26.2020
             //---------------
 
             _entities.Add(entity);

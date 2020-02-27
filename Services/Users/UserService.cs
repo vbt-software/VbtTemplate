@@ -46,7 +46,12 @@ namespace Services.Users
 
         public IServiceResponse<UserModel> Insert(UserModel entityViewModel, int userId)
         {
-            throw new NotImplementedException();
+            var response = new ServiceResponse<UserModel>(null);
+            var model = _mapper.Map<DB.Entities.Users>(entityViewModel);
+            _usersRepository.Insert(model);
+            var returnModel = _mapper.Map<UserModel>(model);
+            response.Entity = returnModel;
+            return response;
         }
 
         public IServiceResponse<UserModel> Update(UserModel entityViewModel, int userId)

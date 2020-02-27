@@ -1,4 +1,5 @@
 ﻿using Core.Configuration;
+using Core.CustomException;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using ServiceStack.Redis;
@@ -25,23 +26,39 @@ namespace Core.Caching
         }
         public T Get<T>(string key)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                return client.Get<T>(key);
+                using (IRedisClient client = new RedisClient(conf))
+                {
+                    return client.Get<T>(key);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new RedisNotAvailableException();
+                //return default;
             }
         }
 
         public IList<T> GetAll<T>(string key)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                var keys = client.SearchKeys(key);
-                if (keys.Any())
+                using (IRedisClient client = new RedisClient(conf))
                 {
-                    IEnumerable<T> dataList = client.GetAll<T>(keys).Values;
-                    return dataList.ToList();
+                    var keys = client.SearchKeys(key);
+                    if (keys.Any())
+                    {
+                        IEnumerable<T> dataList = client.GetAll<T>(keys).Values;
+                        return dataList.ToList();
+                    }
+                    return new List<T>();
                 }
-                return new List<T>();
+            }
+            catch
+            {
+                throw new RedisNotAvailableException();
+                //return default;
             }
         }
 
@@ -52,54 +69,98 @@ namespace Core.Caching
 
         public void Set(string key, object data, DateTime time)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                var dataSerialize = JsonConvert.SerializeObject(data, Formatting.Indented, new JsonSerializerSettings
+                using (IRedisClient client = new RedisClient(conf))
                 {
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
-                client.Set(key, Encoding.UTF8.GetBytes(dataSerialize), time);
+                    var dataSerialize = JsonConvert.SerializeObject(data, Formatting.Indented, new JsonSerializerSettings
+                    {
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
+                    client.Set(key, Encoding.UTF8.GetBytes(dataSerialize), time);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new RedisNotAvailableException();
             }
         }
 
         public void SetAll<T>(IDictionary<string, T> values)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                client.SetAll(values);
+                using (IRedisClient client = new RedisClient(conf))
+                {
+                    client.SetAll(values);
+                }
+            }
+            catch
+            {
+                throw new RedisNotAvailableException();
             }
         }
 
         public int Count(string key)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                return client.SearchKeys(key).Where(s => s.Contains(":") && s.Contains("Mobile-RefreshToken")).ToList().Count;
+                using (IRedisClient client = new RedisClient(conf))
+                {
+                    return client.SearchKeys(key).Where(s => s.Contains(":") && s.Contains("Mobile-RefreshToken")).ToList().Count;
+                }
+            }
+            catch
+            {
+                throw new RedisNotAvailableException();
+                //return 0;
             }
         }
 
         public bool IsSet(string key)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                return client.ContainsKey(key);
+                using (IRedisClient client = new RedisClient(conf))
+                {
+                    return client.ContainsKey(key);
+                }
+            }
+            catch
+            {
+                throw new RedisNotAvailableException();
+                //return false;
             }
         }
 
         public void Remove(string key)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                client.Remove(key);
+                using (IRedisClient client = new RedisClient(conf))
+                {
+                    client.Remove(key);
+                }
+            }
+            catch
+            {
+                throw new RedisNotAvailableException();
             }
         }
 
         public void RemoveByPattern(string pattern)
         {
-            using (IRedisClient client = new RedisClient(conf))
+            try
             {
-                var keys = client.SearchKeys(pattern);
-                client.RemoveAll(keys);
+                using (IRedisClient client = new RedisClient(conf))
+                {
+                    var keys = client.SearchKeys(pattern);
+                    client.RemoveAll(keys);
+                }
+            }
+            catch
+            {
+                throw new RedisNotAvailableException();
             }
         }
 

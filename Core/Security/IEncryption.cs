@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Services.SecurityService
+namespace Core.Security
 {
-    public interface IEncryptionService
+    public interface IEncryption
     {
         string EncryptText(string text, string privateKey = "");
         string DecryptText(string text, string privateKey = "");

@@ -8,12 +8,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Services.SecurityService
+namespace Core.Security
 {
-    public class EncryptionService : IEncryptionService
+    public class Encryption : IEncryption
     {
         private readonly IOptions<VbtConfig> _vbtConfig;
-        public EncryptionService(IOptions<VbtConfig> vbtConfig)
+        public Encryption(IOptions<VbtConfig> vbtConfig)
         {
             _vbtConfig = vbtConfig;
         }
