@@ -61,6 +61,16 @@ namespace TemplateProject.Controllers
             return response;
         }
 
+        [HttpGet("EmployeeWithTerritoriesByContext")]
+        public ServiceResponse<EmployeeTerritory> GetEmployeeWithTerritoriesByContext()
+        {
+            var response = new ServiceResponse<EmployeeTerritory>(HttpContext);
+            response.List = _employeesService.GetEmployeeTerritoryByContext("", 0, 10).List.ToList();
+            response.IsSuccessful = true;
+            response.Count = response.List.Count;
+            return response;
+        }
+
         [Infrastructure.LogAttribute]
         [HttpPost]
         public ServiceResponse<Employees> UpdateEmployee([FromBody] EmployeeTerritory model)
@@ -80,6 +90,18 @@ namespace TemplateProject.Controllers
             var userID = _workContext.CurrentUserId;
 
             var modelList = _roleService.GetRoleListByGroupId(userID, roleGroupID).List;
+            response.List = modelList;
+
+            response.IsSuccessful = true;
+            response.Count = response.List.Count;
+            return response;
+        }
+
+        [HttpGet("GetSalesFor1997")]
+        public ServiceResponse<CategorySalesFor1997> GetSalesFor1997()
+        {
+            var response = new ServiceResponse<CategorySalesFor1997>(HttpContext);
+            var modelList = _employeesService.GetSalesFor1997().List;
             response.List = modelList;
 
             response.IsSuccessful = true;

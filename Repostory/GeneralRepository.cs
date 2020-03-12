@@ -46,7 +46,7 @@ namespace Repository
                 System.Reflection.PropertyInfo[] properties = metadata.MetadataClassType.GetProperties();
                 //Metadata atanmış entity'nin tüm propertyleri tek tek alınır.
                 foreach (System.Reflection.PropertyInfo pi in properties)
-                {
+                {                 
                     //Eğer ilgili property ait CryptoData flag'i var ise ilgili deger encrypt edilir. 
                     if (Attribute.IsDefined(pi, typeof(DB.PartialEntites.CryptoData)))
                     {

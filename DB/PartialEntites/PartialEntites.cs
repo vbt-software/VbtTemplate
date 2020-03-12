@@ -27,6 +27,7 @@ namespace DB.Entities
     public partial class Roles : BaseEntity { }
     public partial class RoleGroups : BaseEntity { }
     public partial class UserRoles : BaseEntity { }
+    public partial class CategorySalesFor1997 : BaseEntity { }
 
     #region Views 
     [Table("Sales by Category")]

@@ -278,7 +278,8 @@ namespace TemplateProject.Infrastructure
                 }
 
                 //Role Yetkisine bakılır.
-                if (HasRoleAttribute(context) && !_workContext.IsAdmin)
+                //if (HasRoleAttribute(context) && !_workContext.IsAdmin)
+                if (HasRoleAttribute(context) && ((beHalfOfUserId == null && !_workContext.IsAdmin) || (beHalfOfUserId != null)))
                 {
                     try
                     {
