@@ -4,6 +4,7 @@ using Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using DB.Entities;
 
 namespace Services.Customers
 {
@@ -15,5 +16,6 @@ namespace Services.Customers
         //ServiceResponse<bool> Delete(int id, int userId);
         List<DB.Entities.Customers> List(CustomerFilter filter);
         ServiceResponse<CustomerListModel> SearchCustomer(string name, int pageNo, int pageSize);
+        ServiceResponse<Top5OrderModel> GetCustomerOrderByRawSql();
     }
 }

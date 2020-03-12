@@ -176,7 +176,7 @@ namespace Repository
 
         public IEnumerable<T> GetSql(string sql)
         {
-            return Entities.FromSqlRaw(sql);
+            return Entities.FromSqlRaw(sql).AsNoTracking();
         }
 
         /// <summary>

@@ -61,6 +61,17 @@ namespace TemplateProject.Controllers
             response.Count = response.List.Count;
             return response;
         }
+        [Infrastructure.IgnoreAttribute] //LoginFilter'a takılmaz.
+        [HttpGet("Top5CustomerOrder")]
+        public ServiceResponse<Top5OrderModel> Top5CustomerOrder()
+        {
+            var response = new ServiceResponse<Top5OrderModel>(HttpContext);
+            response.List = _customerService.GetCustomerOrderByRawSql().List.ToList();
+            response.IsSuccessful = true;
+            response.Count = response.List.Count;
+            return response;
+        }
+
         [Infrastructure.RoleAttribute((int)RoleGroup.Customer, (Int64)CustomerRoles.GetCustomerById)] //LoginFilter'a takılmaz.
         [HttpGet("GetCustomerById/{CustomerID}")]
         public ServiceResponse<CustomerModel> GetCustomerById(string CustomerID)

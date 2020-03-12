@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using AutoMapper;
+using DB.Entities;
 
 namespace Services.Customers
 {
@@ -16,13 +17,15 @@ namespace Services.Customers
     {
         //private readonly IRepository<DB.Entities.Customers> _customerRepository;
         private readonly IRepository<DB.Entities.Customers> _customerRepository;
+        private readonly IRepository<DB.Entities.Top5OrderModel> _customerOrderRepository;
         private readonly IRepository<DB.Entities.VwCustomerProducts> _customerProductRepository;
         private readonly IMapper _mapper;
-        public CustomerService(IRepository<DB.Entities.Customers> customerRepository, IRepository<DB.Entities.VwCustomerProducts> customerProductRepository, IMapper mapper)
+        public CustomerService(IRepository<DB.Entities.Customers> customerRepository, IRepository<DB.Entities.VwCustomerProducts> customerProductRepository, IMapper mapper, IRepository<DB.Entities.Top5OrderModel> customerOrderRepository)
         {
             _customerRepository = customerRepository;
             _customerProductRepository = customerProductRepository;
             _mapper = mapper;
+            _customerOrderRepository = customerOrderRepository;
         }
 
         public IServiceResponse<bool> Delete(long id, int userId)
@@ -85,6 +88,19 @@ namespace Services.Customers
         public IServiceResponse<CustomerModel> GetById(long id, int userId)
         {
             throw new NotImplementedException();
+        }
+
+        public ServiceResponse<Top5OrderModel> GetCustomerOrderByRawSql()
+        {
+            string sqlQuery = @"select top 5 cus.CustomerID, cus.CompanyName, ord.ShipCountry,sum(ordd.Quantity) as Total  from [dbo].[Orders] as ord
+                                inner join [dbo].[Customers] as cus on ord.CustomerID=cus.CustomerID
+                                inner join [dbo].[Order Details] as ordd on ord.CustomerID=cus.CustomerID
+                                group by ShipCountry,CompanyName,cus.CustomerID
+                                order by Total desc";
+            var result = _customerOrderRepository.GetSql(sqlQuery);
+            var response = new ServiceResponse<Top5OrderModel>(null);
+            response.List = result.ToList();
+            return response;
         }
 
         public IServiceResponse<CustomerModel> Insert(CustomerModel model, int userId)

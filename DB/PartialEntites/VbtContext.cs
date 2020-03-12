@@ -1,4 +1,5 @@
-﻿using DB.Entities;
+﻿using Core.Models;
+using DB.Entities;
 using DB.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,8 @@ namespace DB.Entities
      * dotnet ef dbcontext scaffold "Server=localhost\SQLEXPRESS;Database=Northwind;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer --output-dir Entities --force*/
     public class VbtContext : NorthwindContext
     {
+        public DbSet<Top5OrderModel> Top5OrderModel { get; set; }
+
         public VbtContext()
         {
         }
@@ -23,6 +26,11 @@ namespace DB.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Top5OrderModel>(entity =>
+            {
+                entity.HasNoKey();
+            });
+
             modelBuilder.AddGlobalFilter();
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
